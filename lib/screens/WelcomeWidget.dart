@@ -33,13 +33,14 @@ class WelcomeWidget extends StatelessWidget {
                             SizedBox(width: 8),
                             Row(
                               children: [
-                                Image.asset('assets/logo.png', height: 30),
+                                Image.asset('assets/images/logo.png',
+                                    height: 55),
                                 SizedBox(width: 8),
                                 Text(
                                   'POS WALLA',
                                   style: GoogleFonts.getFont(
                                     'Poppins', // Use Poppins font
-                                    fontSize: 20,
+                                    fontSize: 28,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black,
                                   ),

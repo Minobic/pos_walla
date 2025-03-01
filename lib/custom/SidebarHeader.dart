@@ -72,14 +72,14 @@ class _SidebarState extends State<Sidebar> {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(15),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.network(
-                  'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/6-DaF4ALXMwQ5K3xfmVXVkZDiRg8JieP.png',
-                  width: 40,
-                  height: 40,
+                Image.asset(
+                  'assets/images/logo.png',
+                  width: 50,
+                  height: 50,
                 ),
                 if (widget.isSidebarOpen) const SizedBox(width: 10),
                 if (widget.isSidebarOpen)

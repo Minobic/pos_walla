@@ -57,23 +57,9 @@ class _LoginWidgetState extends State<LoginWidget> {
                           ),
                         ),
                         const SizedBox(width: 10),
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF4CAF50),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'P',
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
+                        Image.asset(
+                          'assets/images/logo.png',
+                          height: 55,
                         ),
                         const SizedBox(width: 12),
                         Column(
