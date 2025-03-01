@@ -5,7 +5,8 @@ class Sidebar extends StatefulWidget {
   final VoidCallback toggleSidebar;
   final String userName;
   final String userRole;
-  final String selectedMenuItem; // Add this parameter
+  final int userId; // Add userId parameter
+  final String selectedMenuItem;
 
   const Sidebar({
     Key? key,
@@ -13,7 +14,8 @@ class Sidebar extends StatefulWidget {
     required this.toggleSidebar,
     required this.userName,
     required this.userRole,
-    required this.selectedMenuItem, // Add this parameter
+    required this.userId, // Add userId parameter
+    required this.selectedMenuItem,
   }) : super(key: key);
 
   @override
@@ -21,16 +23,7 @@ class Sidebar extends StatefulWidget {
 }
 
 class _SidebarState extends State<Sidebar> {
-  String getInitials(String fullName) {
-    List<String> names = fullName.split(' ');
-    String initials = '';
-    for (String name in names) {
-      if (name.isNotEmpty) {
-        initials += name[0];
-      }
-    }
-    return initials.toUpperCase();
-  }
+  // ... existing code ...
 
   Widget _buildMenuItem(
       String title, IconData icon, bool isSelected, Function onTap) {
@@ -109,8 +102,7 @@ class _SidebarState extends State<Sidebar> {
                   _buildMenuItem(
                     'Dashboard',
                     Icons.dashboard,
-                    widget.selectedMenuItem ==
-                        'Dashboard', // Highlight if selected
+                    widget.selectedMenuItem == 'Dashboard',
                     () {
                       Navigator.pushReplacementNamed(
                         context,
@@ -118,6 +110,7 @@ class _SidebarState extends State<Sidebar> {
                         arguments: {
                           'name': widget.userName,
                           'role': widget.userRole,
+                          'userId': widget.userId, // Pass userId
                         },
                       );
                     },
@@ -125,8 +118,7 @@ class _SidebarState extends State<Sidebar> {
                   _buildMenuItem(
                     'Categories',
                     Icons.category,
-                    widget.selectedMenuItem ==
-                        'Categories', // Highlight if selected
+                    widget.selectedMenuItem == 'Categories',
                     () {
                       Navigator.pushReplacementNamed(
                         context,
@@ -134,6 +126,7 @@ class _SidebarState extends State<Sidebar> {
                         arguments: {
                           'name': widget.userName,
                           'role': widget.userRole,
+                          'userId': widget.userId, // Pass userId
                         },
                       );
                     },
@@ -146,6 +139,7 @@ class _SidebarState extends State<Sidebar> {
                       arguments: {
                         'name': widget.userName,
                         'role': widget.userRole,
+                        'userId': widget.userId, // Pass userId
                       },
                     );
                   }),
@@ -157,6 +151,7 @@ class _SidebarState extends State<Sidebar> {
                       arguments: {
                         'name': widget.userName,
                         'role': widget.userRole,
+                        'userId': widget.userId, // Pass userId
                       },
                     );
                   }),
@@ -168,6 +163,7 @@ class _SidebarState extends State<Sidebar> {
                       arguments: {
                         'name': widget.userName,
                         'role': widget.userRole,
+                        'userId': widget.userId, // Pass userId
                       },
                     );
                   }),
@@ -179,6 +175,7 @@ class _SidebarState extends State<Sidebar> {
                       arguments: {
                         'name': widget.userName,
                         'role': widget.userRole,
+                        'userId': widget.userId, // Pass userId
                       },
                     );
                   }),
@@ -190,6 +187,7 @@ class _SidebarState extends State<Sidebar> {
                       arguments: {
                         'name': widget.userName,
                         'role': widget.userRole,
+                        'userId': widget.userId, // Pass userId
                       },
                     );
                   }),
@@ -201,6 +199,7 @@ class _SidebarState extends State<Sidebar> {
                       arguments: {
                         'name': widget.userName,
                         'role': widget.userRole,
+                        'userId': widget.userId, // Pass userId
                       },
                     );
                   }),

@@ -113,7 +113,7 @@ class InvoiceItem(db.Model):
     invoice_item_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     invoice_id = db.Column(db.Integer, db.ForeignKey('Invoice.invoice_id'), nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('Product.product_id'), nullable=False)
-    p_batch_id = db.Column(db.Integer, db.ForeignKey('ProductBatch.p_batch_id'), nullable=False)
+    p_batch_id = db.Column(db.Integer, db.ForeignKey('ProductBatch.p_batch_id'), nullable=True)
     quantity = db.Column(db.Integer, nullable=False)
     price = db.Column(db.Numeric(10, 2), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -571,34 +571,6 @@ def delete_inventory(inventory_id):
 
     return jsonify({'message': 'Inventory deleted successfully'}), 200
 
-@app.route('/invoice_items', methods=['GET'])
-def get_invoice_items():
-    invoice_items = InvoiceItem.query.all()
-    invoice_items_list = []
-    for item in invoice_items:
-        invoice_items_list.append({
-            'invoice_item_id': item.invoice_item_id,
-            'invoice_id': item.invoice_id,
-            'product_id': item.product_id,
-            'p_batch_id': item.p_batch_id,
-            'quantity': item.quantity,
-            'price': float(item.price),
-            'created_at': item.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-        })
-    return jsonify(invoice_items_list), 200
-
-# Endpoint to delete an invoice item
-@app.route('/invoice_items/<int:invoice_item_id>', methods=['DELETE'])
-def delete_invoice_item(invoice_item_id):
-    invoice_item = InvoiceItem.query.get(invoice_item_id)
-    if not invoice_item:
-        return jsonify({'error': 'Invoice item not found'}), 404
-
-    db.session.delete(invoice_item)
-    db.session.commit()
-
-    return jsonify({'message': 'Invoice item deleted successfully'}), 200
-
 @app.route('/barcodes', methods=['GET'])
 def get_barcodes():
     barcodes = BarcodeGenerator.query.all()
@@ -692,6 +664,103 @@ def delete_barcode(barcode_id):
     db.session.commit()
 
     return jsonify({'message': 'Barcode deleted successfully'}), 200
+
+@app.route('/barcodes/<string:barcode>', methods=['GET'])
+def get_product_by_barcode(barcode):
+    barcode_entry = BarcodeGenerator.query.filter_by(barcode_number=barcode).first()
+    if barcode_entry:
+        product_details = Product.query.filter_by(product_name=barcode_entry.product_name).first()
+        if product_details:
+            return jsonify({
+                'product_id': product_details.product_id,
+                'product_name': product_details.product_name,
+                'mrp_price': float(product_details.mrp_price),
+                'sale_price': float(product_details.sale_price),
+            }), 200
+    return jsonify({'error': 'Product not found'}), 404
+
+@app.route('/promocode/<string:promo_code>', methods=['GET'])
+def apply_promo_code(promo_code):
+    coupon = Coupon.query.filter_by(coupon_code=promo_code).first()
+    if coupon:
+        current_date = datetime.utcnow()
+        if coupon.start_date <= current_date <= coupon.end_date:
+            discount_amount = float(coupon.value) if coupon.discount_type == 'fixed' else float(coupon.value) / 100
+            return jsonify({'discount_amount': discount_amount}), 200
+    return jsonify({'error': 'Invalid promo code'}), 404
+
+@app.route('/invoices', methods=['POST'])
+def create_invoice():
+    data = request.get_json()
+
+    # Validate input data
+    required_fields = ['user_id', 'customer_name', 'customer_mobile', 'total_amount', 'sub_total', 'items', 'payment_method']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'error': f'{field} is required'}), 400
+
+    # Check if customer exists, if not, create a new customer
+    customer = Customer.query.filter_by(customer_mobile=data['customer_mobile']).first()
+    if not customer:
+        customer = Customer(customer_name=data['customer_name'], customer_mobile=data['customer_mobile'])
+        db.session.add(customer)
+        db.session.commit()
+    else:
+        # Update the customer name if it exists
+        customer.customer_name = data['customer_name']
+        db.session.commit()
+
+    # Create invoice
+    new_invoice = Invoice(
+        user_id=data['user_id'],
+        customer_id=customer.customer_id,
+        total_amount=data['total_amount'],
+        sub_total=data['sub_total'],
+        discount_amount=data.get('discount_amount', 0.0),
+        tax_amount=data.get('tax_amount', 0.0),
+    )
+    db.session.add(new_invoice)
+    db.session.commit()
+
+    # Create invoice items
+    for item in data['items']:
+        invoice_item = InvoiceItem(
+            invoice_id=new_invoice.invoice_id,
+            product_id=item['product_id'],
+            p_batch_id=item['p_batch_id'] if item['p_batch_id'] is not None else None,
+            quantity=item['quantity'],
+            price=item['sale_price'],
+        )
+        db.session.add(invoice_item)
+
+    # Create invoice payment
+    invoice_payment = InvoicePayment(
+        invoice_id=new_invoice.invoice_id,
+        amount=data['total_amount'],
+        payment_method=data['payment_method'],
+    )
+    db.session.add(invoice_payment)
+    db.session.commit()
+
+    # Update loyalty points
+    loyalty_points = LoyaltyPoints.query.filter_by(customer_id=customer.customer_id).first()
+    if not loyalty_points:
+        loyalty_points = LoyaltyPoints(customer_id=customer.customer_id, points=0)
+        db.session.add(loyalty_points)
+
+    # Assuming 1 point for every 100 rupees spent
+    points_to_add = int(data['total_amount'] / 100)
+    loyalty_points.points += points_to_add
+    db.session.commit()
+
+    return jsonify({'message': 'Invoice created successfully', 'invoice_id': new_invoice.invoice_id}), 201
+
+
+
+@app.route('/payment_methods', methods=['GET'])
+def get_payment_methods():
+    payment_methods = ['cash', 'credit_card', 'debit_card', 'mobile_payment']
+    return jsonify(payment_methods), 200
 
 if __name__ == '__main__':
     with app.app_context():  # Ensure the app context is active

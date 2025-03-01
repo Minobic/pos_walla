@@ -10,7 +10,6 @@ import 'screens/user/userScreens/ProductBatchWidget.dart';
 import 'screens/user/userScreens/InventoryWidget.dart';
 import 'screens/user/userScreens/BillingWidget.dart';
 import 'screens/user/userScreens/BarcodeGeneratorWidget.dart';
-import 'screens/user/userScreens/BarcodeListWidget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,90 +48,93 @@ class _MyAppState extends State<MyApp> {
                 builder: (context) => const AdminLoginWidget());
           case '/dashboard':
             final args = settings.arguments
-                as Map<String, String>; // Expecting a Map with user data
+                as Map<String, dynamic>; // Expecting a Map with user data
             return MaterialPageRoute(
               builder: (context) => DashboardWidget(
                 userName: args['name'] ??
                     'User ', // Provide a default value if not found
                 userRole: args['role'] ??
                     'Role', // Provide a default value if not found
+                userId:
+                    args['userId'] ?? 1, // Provide a default value if not found
               ),
             );
           case '/category':
             final args = settings.arguments
-                as Map<String, String>; // Expecting a Map with user data
+                as Map<String, dynamic>; // Expecting a Map with user data
             return MaterialPageRoute(
               builder: (context) => CategoryWidget(
                 userName: args['name'] ??
                     'User ', // Provide a default value if not found
                 userRole: args['role'] ??
                     'Role', // Provide a default value if not found
+                userId:
+                    args['userId'] ?? 1, // Provide a default value if not found
               ),
             );
           case '/product':
             final args = settings.arguments
-                as Map<String, String>; // Expecting a Map with user data
+                as Map<String, dynamic>; // Expecting a Map with user data
             return MaterialPageRoute(
               builder: (context) => ProductWidget(
                 userName: args['name'] ??
                     'User ', // Provide a default value if not found
                 userRole: args['role'] ??
                     'Role', // Provide a default value if not found
+                userId:
+                    args['userId'] ?? 1, // Provide a default value if not found
               ),
             );
           case '/productbatch':
             final args = settings.arguments
-                as Map<String, String>; // Expecting a Map with user data
+                as Map<String, dynamic>; // Expecting a Map with user data
             return MaterialPageRoute(
               builder: (context) => ProductBatchWidget(
                 userName: args['name'] ??
                     'User ', // Provide a default value if not found
                 userRole: args['role'] ??
                     'Role', // Provide a default value if not found
+                userId:
+                    args['userId'] ?? 1, // Provide a default value if not found
               ),
             );
           case '/inventory':
             final args = settings.arguments
-                as Map<String, String>; // Expecting a Map with user data
+                as Map<String, dynamic>; // Expecting a Map with user data
             return MaterialPageRoute(
               builder: (context) => InventoryWidget(
                 userName: args['name'] ??
                     'User ', // Provide a default value if not found
                 userRole: args['role'] ??
                     'Role', // Provide a default value if not found
+                userId:
+                    args['userId'] ?? 1, // Provide a default value if not found
               ),
             );
           case '/billing':
             final args = settings.arguments
-                as Map<String, String>; // Expecting a Map with user data
+                as Map<String, dynamic>; // Expecting a Map with user data
             return MaterialPageRoute(
               builder: (context) => BillingWidget(
                 userName: args['name'] ??
                     'User ', // Provide a default value if not found
                 userRole: args['role'] ??
                     'Role', // Provide a default value if not found
+                userId:
+                    args['userId'] ?? 1, // Provide a default value if not found
               ),
             );
           case '/barcode':
             final args = settings.arguments
-                as Map<String, String>; // Expecting a Map with user data
+                as Map<String, dynamic>; // Expecting a Map with user data
             return MaterialPageRoute(
               builder: (context) => BarcodeGeneratorWidget(
                 userName: args['name'] ??
                     'User ', // Provide a default value if not found
                 userRole: args['role'] ??
                     'Role', // Provide a default value if not found
-              ),
-            );
-          case '/barcodeList':
-            final args = settings.arguments
-                as Map<String, String>; // Expecting a Map with user data
-            return MaterialPageRoute(
-              builder: (context) => BarcodeListWidget(
-                userName: args['name'] ??
-                    'User ', // Provide a default value if not found
-                userRole: args['role'] ??
-                    'Role', // Provide a default value if not found
+                userId:
+                    args['userId'] ?? 1, // Provide a default value if not found
               ),
             );
           default:

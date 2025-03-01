@@ -4,10 +4,12 @@ import '../../../custom/SidebarHeader.dart';
 class DashboardWidget extends StatefulWidget {
   final String userName;
   final String userRole;
+  final int userId;
   const DashboardWidget({
     super.key,
     required this.userName,
     required this.userRole,
+    required this.userId,
   });
 
   @override
@@ -33,6 +35,7 @@ class _DashboardWidgetState extends State<DashboardWidget> {
             toggleSidebar: _toggleSidebar,
             userName: widget.userName,
             userRole: widget.userRole,
+            userId: widget.userId,
             selectedMenuItem: 'Dashboard', // Highlight Dashboard
           ),
           Expanded(

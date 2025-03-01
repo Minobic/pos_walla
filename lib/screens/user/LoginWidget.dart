@@ -204,6 +204,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                                                   response['name'];
                                               String userRole =
                                                   response['role'];
+                                              int userId = response['user_id'];
 
                                               // Navigate to Dashboard with user data
                                               Navigator.pushReplacementNamed(
@@ -212,6 +213,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                                                 arguments: {
                                                   'name': userName,
                                                   'role': userRole,
+                                                  'userId': userId,
                                                 },
                                               );
                                             } catch (e) {

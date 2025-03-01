@@ -433,27 +433,6 @@ class ApiService {
     }
   }
 
-  static Future<List<dynamic>> fetchInvoiceItems() async {
-    final url = Uri.parse('$_baseUrl/invoice_items');
-    final response = await http.get(url);
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to fetch invoice items: ${response.body}');
-    }
-  }
-
-  // Delete an invoice item
-  static Future<void> deleteInvoiceItem(int invoiceItemId) async {
-    final url = Uri.parse('$_baseUrl/invoice_items/$invoiceItemId');
-    final response = await http.delete(url);
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to delete invoice item: ${response.body}');
-    }
-  }
-
   static Future<List<dynamic>> fetchBarcodes() async {
     final url = Uri.parse('$_baseUrl/barcodes');
     final response = await http.get(url);
@@ -530,6 +509,82 @@ class ApiService {
 
     if (response.statusCode != 200) {
       throw Exception('Failed to delete barcode: ${response.body}');
+    }
+  }
+
+  static Future<Map<String, dynamic>?> fetchProductByBarcode(
+      String barcode) async {
+    final url = Uri.parse('$_baseUrl/barcodes/$barcode');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> product = jsonDecode(response.body);
+      return product;
+    }
+    return null;
+  }
+
+  // Apply promo code
+  static Future<double> applyPromoCode(
+      String promoCode, double subtotal) async {
+    final url = Uri.parse('$_baseUrl/promocode/$promoCode');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      double discount = data['discount_amount'];
+      return discount;
+    }
+    return 0.0;
+  }
+
+  // Create invoice
+  static Future<Map<String, dynamic>> createInvoice({
+    required int userId,
+    required String customerName,
+    required String customerMobile,
+    required double totalAmount,
+    required double subTotal,
+    required double discountAmount,
+    required double taxAmount,
+    required String paymentMethod,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    final url = Uri.parse('$_baseUrl/invoices');
+    final response = await http.post(
+      url,
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'user_id': userId,
+        'customer_name': customerName,
+        'customer_mobile': customerMobile,
+        'total_amount': totalAmount,
+        'sub_total': subTotal,
+        'discount_amount': discountAmount,
+        'tax_amount': taxAmount,
+        'payment_method': paymentMethod,
+        'items': items,
+      }),
+    );
+
+    if (response.statusCode == 201) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to create invoice: ${response.body}');
+    }
+  }
+
+  // Fetch payment methods
+  static Future<List<dynamic>> fetchPaymentMethods() async {
+    final url = Uri.parse('$_baseUrl/payment_methods');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to fetch payment methods: ${response.body}');
     }
   }
 }

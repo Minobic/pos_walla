@@ -15,11 +15,13 @@ import '../../../custom/RedButton.dart'; // Import the RedButton
 class BarcodeGeneratorWidget extends StatefulWidget {
   final String userName;
   final String userRole;
+  final int userId;
 
   const BarcodeGeneratorWidget({
     Key? key,
     required this.userName,
     required this.userRole,
+    required this.userId,
   }) : super(key: key);
 
   @override
@@ -868,6 +870,7 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
             toggleSidebar: _toggleSidebar,
             userName: widget.userName,
             userRole: widget.userRole,
+            userId: widget.userId,
             selectedMenuItem: 'Generate Barcode',
           ),
           Expanded(

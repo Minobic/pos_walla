@@ -8,11 +8,13 @@ import '../../../custom/RedButton.dart'; // Import the RedButton
 class InventoryWidget extends StatefulWidget {
   final String userName;
   final String userRole;
+  final int userId;
 
   const InventoryWidget({
     Key? key,
     required this.userName,
     required this.userRole,
+    required this.userId,
   }) : super(key: key);
 
   @override
@@ -613,6 +615,7 @@ class _InventoryWidgetState extends State<InventoryWidget> {
             },
             userName: widget.userName,
             userRole: widget.userRole,
+            userId: widget.userId,
             selectedMenuItem: 'Inventory',
           ),
           Expanded(
