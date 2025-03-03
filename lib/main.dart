@@ -10,6 +10,7 @@ import 'screens/user/userScreens/ProductBatchWidget.dart';
 import 'screens/user/userScreens/InventoryWidget.dart';
 import 'screens/user/userScreens/BillingWidget.dart';
 import 'screens/user/userScreens/BarcodeGeneratorWidget.dart';
+import 'screens/admin/adminScreens/AdminDashboardWidget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -137,6 +138,9 @@ class _MyAppState extends State<MyApp> {
                     args['userId'] ?? 1, // Provide a default value if not found
               ),
             );
+          case '/adminDashboard':
+            return MaterialPageRoute(
+                builder: (context) => const AdminDashboardWidget());
           default:
             return MaterialPageRoute(
                 builder: (context) => const WelcomeWidget());

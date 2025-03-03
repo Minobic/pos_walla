@@ -45,7 +45,6 @@ class Product(db.Model):
     product_description = db.Column(db.Text)
     sale_price = db.Column(db.Numeric(10, 2), nullable=False)
     mrp_price = db.Column(db.Numeric(10, 2), nullable=False)
-    quantity = db.Column(db.Integer, nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('Category.cat_id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -309,7 +308,6 @@ def get_products():
             'product_description': product.product_description,
             'sale_price': float(product.sale_price),
             'mrp_price': float(product.mrp_price),
-            'quantity': product.quantity,
             'category_id': product.category_id,
             'category_name': category_name,  # Include category name
             'created_at': product.created_at.strftime('%Y-%m-%d %H:%M:%S'),
@@ -321,7 +319,7 @@ def get_products():
 def add_product():
     data = request.get_json()
 
-    if not data or 'product_name' not in data or 'sale_price' not in data or 'mrp_price' not in data or 'quantity' not in data or 'category_id' not in data:
+    if not data or 'product_name' not in data or 'sale_price' not in data or 'mrp_price' not in data or 'category_id' not in data:
         return jsonify({'error': 'Missing required fields'}), 400
 
     new_product = Product(
@@ -329,8 +327,7 @@ def add_product():
         product_description=data.get('product_description', ''),
         sale_price=data['sale_price'],
         mrp_price=data['mrp_price'],
-        quantity=data['quantity'],
-        category_id=data['category_id']
+        category_id=data['category_id']  # Removed quantity
     )
 
     db.session.add(new_product)
@@ -342,7 +339,6 @@ def add_product():
         'product_description': new_product.product_description,
         'sale_price': float(new_product.sale_price),
         'mrp_price': float(new_product.mrp_price),
-        'quantity': new_product.quantity,
         'category_id': new_product.category_id,
         'created_at': new_product.created_at.strftime('%Y-%m-%d %H:%M:%S'),
         'updated_at': new_product.updated_at.strftime('%Y-%m-%d %H:%M:%S')
@@ -352,7 +348,7 @@ def add_product():
 def update_product(product_id):
     data = request.get_json()
 
-    if not data or 'product_name' not in data or 'sale_price' not in data or 'mrp_price' not in data or 'quantity' not in data or 'category_id' not in data:
+    if not data or 'product_name' not in data or 'sale_price' not in data or 'mrp_price' not in data or 'category_id' not in data:
         return jsonify({'error': 'Missing required fields'}), 400
 
     product = Product.query.get(product_id)
@@ -363,8 +359,7 @@ def update_product(product_id):
     product.product_description = data.get('product_description', product.product_description)
     product.sale_price = data['sale_price']
     product.mrp_price = data['mrp_price']
-    product.quantity = data['quantity']
-    product.category_id = data['category_id']
+    product.category_id = data['category_id']  # Removed quantity
     db.session.commit()
 
     return jsonify({
@@ -373,7 +368,6 @@ def update_product(product_id):
         'product_description': product.product_description,
         'sale_price': float(product.sale_price),
         'mrp_price': float(product.mrp_price),
-        'quantity': product.quantity,
         'category_id': product.category_id,
         'created_at': product.created_at.strftime('%Y-%m-%d %H:%M:%S'),
         'updated_at': product.updated_at.strftime('%Y-%m-%d %H:%M:%S')
@@ -722,7 +716,7 @@ def create_invoice():
     db.session.add(new_invoice)
     db.session.commit()
 
-    # Create invoice items
+    # Create invoice items and update inventory
     for item in data['items']:
         invoice_item = InvoiceItem(
             invoice_id=new_invoice.invoice_id,
@@ -732,6 +726,15 @@ def create_invoice():
             price=item['sale_price'],
         )
         db.session.add(invoice_item)
+
+        # Update inventory for the product batch
+        if item['p_batch_id'] is not None:
+            inventory = Inventory.query.filter_by(p_batch_id=item['p_batch_id']).first()
+            if inventory:
+                inventory.p_batch_quantity -= item['quantity']
+                if inventory.p_batch_quantity < 0:
+                    inventory.p_batch_quantity = 0  # Ensure quantity doesn't go negative
+                db.session.commit()
 
     # Create invoice payment
     invoice_payment = InvoicePayment(

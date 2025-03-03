@@ -100,7 +100,6 @@ class _ProductWidgetState extends State<ProductWidget> {
   void _showAddProductDialog() {
     final TextEditingController nameController = TextEditingController();
     final TextEditingController descriptionController = TextEditingController();
-    final TextEditingController quantityController = TextEditingController();
     final TextEditingController mrpController = TextEditingController();
     final TextEditingController sellPriceController = TextEditingController();
 
@@ -154,19 +153,6 @@ class _ProductWidgetState extends State<ProductWidget> {
                         borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: quantityController,
-                    decoration: InputDecoration(
-                      labelText: 'Quantity',
-                      labelStyle: TextStyle(fontFamily: 'Poppins'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                    ),
-                    keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -247,7 +233,6 @@ class _ProductWidgetState extends State<ProductWidget> {
                   final newProduct = await ApiService.addProduct(
                     name: nameController.text,
                     description: descriptionController.text,
-                    quantity: int.parse(quantityController.text),
                     mrpPrice: double.parse(mrpController.text),
                     salePrice: double.parse(sellPriceController.text),
                     categoryId:
@@ -276,8 +261,6 @@ class _ProductWidgetState extends State<ProductWidget> {
         TextEditingController(text: product['product_name']);
     final TextEditingController descriptionController =
         TextEditingController(text: product['product_description']);
-    final TextEditingController quantityController =
-        TextEditingController(text: product['quantity'].toString());
     final TextEditingController mrpController =
         TextEditingController(text: product['mrp_price'].toString());
     final TextEditingController sellPriceController =
@@ -336,19 +319,6 @@ class _ProductWidgetState extends State<ProductWidget> {
                         borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: quantityController,
-                    decoration: InputDecoration(
-                      labelText: 'Quantity',
-                      labelStyle: TextStyle(fontFamily: 'Poppins'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                    ),
-                    keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -430,7 +400,6 @@ class _ProductWidgetState extends State<ProductWidget> {
                     productId: product['product_id'],
                     name: nameController.text,
                     description: descriptionController.text,
-                    quantity: int.parse(quantityController.text),
                     mrpPrice: double.parse(mrpController.text),
                     salePrice: double.parse(sellPriceController.text),
                     categoryId:
@@ -788,18 +757,6 @@ class _ProductWidgetState extends State<ProductWidget> {
                                             Expanded(
                                               flex: 2,
                                               child: Text(
-                                                'Quantity',
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontFamily: 'Poppins',
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                                textAlign: TextAlign.center,
-                                              ),
-                                            ),
-                                            Expanded(
-                                              flex: 2,
-                                              child: Text(
                                                 'MRP',
                                                 style: TextStyle(
                                                   color: Colors.white,
@@ -917,19 +874,6 @@ class _ProductWidgetState extends State<ProductWidget> {
                                                               child: Text(
                                                                 product[
                                                                     'product_description'],
-                                                                style: const TextStyle(
-                                                                    fontFamily:
-                                                                        'Poppins'),
-                                                                textAlign:
-                                                                    TextAlign
-                                                                        .center,
-                                                              ),
-                                                            ),
-                                                            Expanded(
-                                                              flex: 2,
-                                                              child: Text(
-                                                                product['quantity']
-                                                                    .toString(),
                                                                 style: const TextStyle(
                                                                     fontFamily:
                                                                         'Poppins'),

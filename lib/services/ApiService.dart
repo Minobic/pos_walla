@@ -178,7 +178,6 @@ class ApiService {
     required String description,
     required double salePrice,
     required double mrpPrice,
-    required int quantity,
     required int categoryId,
   }) async {
     final url = Uri.parse('$_baseUrl/products');
@@ -192,7 +191,6 @@ class ApiService {
         'product_description': description,
         'sale_price': salePrice,
         'mrp_price': mrpPrice,
-        'quantity': quantity,
         'category_id': categoryId,
       }),
     );
@@ -210,7 +208,6 @@ class ApiService {
     required String description,
     required double salePrice,
     required double mrpPrice,
-    required int quantity,
     required int categoryId,
   }) async {
     final url = Uri.parse('$_baseUrl/products/$productId');
@@ -224,7 +221,6 @@ class ApiService {
         'product_description': description,
         'sale_price': salePrice,
         'mrp_price': mrpPrice,
-        'quantity': quantity,
         'category_id': categoryId,
       }),
     );

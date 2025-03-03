@@ -18,6 +18,10 @@ class _AdminLoginWidgetState extends State<AdminLoginWidget> {
   bool _passwordVisible = false;
   bool _confirmPasswordVisible = false;
 
+  // Hardcoded admin credentials
+  final String _adminUsername = 'admin';
+  final String _adminPassword = 'password123';
+
   @override
   void dispose() {
     _usernameController.dispose();
@@ -113,14 +117,6 @@ class _AdminLoginWidgetState extends State<AdminLoginWidget> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Join Hanover & Tyke Today',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 16,
-                                    color: Colors.black,
-                                  ),
-                                ),
                                 const SizedBox(height: 32),
                                 CustomTextField(
                                   controller: _usernameController,
@@ -165,7 +161,23 @@ class _AdminLoginWidgetState extends State<AdminLoginWidget> {
                                   onPressed: () {
                                     if (_formKey.currentState?.validate() ??
                                         false) {
-                                      // Handle login
+                                      // Check hardcoded credentials
+                                      if (_usernameController.text ==
+                                              _adminUsername &&
+                                          _passwordController.text ==
+                                              _adminPassword) {
+                                        // Navigate to AdminDashboard
+                                        Navigator.pushNamed(
+                                            context, '/adminDashboard');
+                                      } else {
+                                        // Failed login
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                              content: Text(
+                                                  'Invalid username or password')),
+                                        );
+                                      }
                                     }
                                   },
                                   style: ElevatedButton.styleFrom(

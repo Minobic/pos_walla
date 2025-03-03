@@ -68,6 +68,41 @@ class _BillingWidgetState extends State<BillingWidget> {
     }
   }
 
+  Future<int?> _findAvailableBatch(int productId, int quantity) async {
+    for (var batch in _productBatches) {
+      if (batch['p_id'] == productId) {
+        try {
+          await _checkBatchStock(batch['p_batch_id'], quantity);
+          return batch['p_batch_id'];
+        } catch (e) {
+          // Continue to the next batch if the current one doesn't have enough stock
+          continue;
+        }
+      }
+    }
+    return null; // Return null if no batch has sufficient stock
+  }
+
+  Future<void> _checkBatchStock(int batchId, int quantity) async {
+    try {
+      final inventory = await ApiService.fetchInventories();
+      final batchInventory = inventory.firstWhere(
+        (item) => item['p_batch_id'] == batchId,
+        orElse: () => null,
+      );
+
+      if (batchInventory != null &&
+          batchInventory['p_batch_quantity'] >= quantity) {
+        return;
+      } else {
+        throw Exception('Insufficient stock');
+      }
+    } catch (e) {
+      print('Failed to check batch stock: $e');
+      throw Exception('Failed to check batch stock');
+    }
+  }
+
   void _addProductByBarcode(String barcode) async {
     try {
       final product = await ApiService.fetchProductByBarcode(barcode);
@@ -78,38 +113,33 @@ class _BillingWidgetState extends State<BillingWidget> {
             item['quantity'] += 1;
             item['total_price'] = item['quantity'] * item['sale_price'];
             isExisting = true;
+            await _checkBatchStock(item['batch'], item['quantity']);
             break;
           }
         }
         if (!isExisting) {
-          String? selectedBatch = null;
-          DateTime? batchExpiry = null;
+          int? selectedBatch =
+              await _findAvailableBatch(product['product_id'], 1);
 
-          // Check if the product has batches
-          final productBatches = _productBatches
-              .where((batch) =>
-                  batch['p_id'] == product['product_id'] &&
-                  DateTime.parse(batch['p_batch_exp']).isAfter(DateTime.now()))
-              .toList();
-
-          if (productBatches.isNotEmpty) {
-            selectedBatch = productBatches.first['p_batch_id'].toString();
-            batchExpiry = DateTime.parse(productBatches.first['p_batch_exp']);
-          }
-
-          setState(() {
-            _billingItems.add({
-              'product_id': product['product_id'],
-              'product_name': product['product_name'],
-              'quantity': 1,
-              'mrp_price': product['mrp_price'],
-              'sale_price': product['sale_price'],
-              'total_price': product['sale_price'],
-              'batch': selectedBatch,
-              'batch_expiry': batchExpiry?.toString(),
+          if (selectedBatch != null) {
+            setState(() {
+              _billingItems.add({
+                'product_id': product['product_id'],
+                'product_name': product['product_name'],
+                'quantity': 1,
+                'mrp_price': product['mrp_price'],
+                'sale_price': product['sale_price'],
+                'total_price': product['sale_price'],
+                'batch': selectedBatch,
+              });
+              _calculateTotals();
             });
-            _calculateTotals();
-          });
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content: Text('No available batch with sufficient stock')),
+            );
+          }
         } else {
           // Trigger a rebuild to reflect the updated quantity
           setState(() {
@@ -123,6 +153,9 @@ class _BillingWidgetState extends State<BillingWidget> {
       }
     } catch (e) {
       print('Failed to fetch product: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to add product: $e')),
+      );
     }
   }
 
@@ -139,13 +172,20 @@ class _BillingWidgetState extends State<BillingWidget> {
     });
   }
 
-  void _updateQuantity(int index, int quantity) {
-    setState(() {
-      _billingItems[index]['quantity'] = quantity;
-      _billingItems[index]['total_price'] =
-          quantity * _billingItems[index]['sale_price'];
-      _calculateTotals(); // Ensure totals are recalculated
-    });
+  void _updateQuantity(int index, int quantity) async {
+    try {
+      await _checkBatchStock(_billingItems[index]['batch'], quantity);
+      setState(() {
+        _billingItems[index]['quantity'] = quantity;
+        _billingItems[index]['total_price'] =
+            quantity * (_billingItems[index]['sale_price'] as double);
+        _calculateTotals(); // Ensure totals are recalculated
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update quantity: $e')),
+      );
+    }
   }
 
   void _removeItem(int index) {
@@ -155,20 +195,29 @@ class _BillingWidgetState extends State<BillingWidget> {
     });
   }
 
-  void _proceedToCheckout() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CheckoutWidget(
-          userName: widget.userName,
-          userRole: widget.userRole,
-          userId: widget.userId,
-          billingItems: _billingItems,
-          totalQuantity: _totalQuantity,
-          totalPrice: _totalPrice,
+  void _proceedToCheckout() async {
+    try {
+      for (var item in _billingItems) {
+        await _checkBatchStock(item['batch'], item['quantity']);
+      }
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CheckoutWidget(
+            userName: widget.userName,
+            userRole: widget.userRole,
+            userId: widget.userId,
+            billingItems: _billingItems,
+            totalQuantity: _totalQuantity,
+            totalPrice: _totalPrice,
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to proceed to checkout: $e')),
+      );
+    }
   }
 
   @override
@@ -439,22 +488,35 @@ class _BillingWidgetState extends State<BillingWidget> {
                                                   ),
                                                   Expanded(
                                                     flex: 1,
-                                                    child:
-                                                        DropdownButton<String>(
+                                                    child: DropdownButton<int>(
                                                       value: item['batch'],
-                                                      onChanged: (value) {
-                                                        setState(() {
-                                                          _billingItems[index]
-                                                              ['batch'] = value;
-                                                        });
+                                                      onChanged: (value) async {
+                                                        try {
+                                                          await _checkBatchStock(
+                                                              value!,
+                                                              item['quantity']);
+                                                          setState(() {
+                                                            _billingItems[index]
+                                                                    ['batch'] =
+                                                                value;
+                                                          });
+                                                        } catch (e) {
+                                                          ScaffoldMessenger.of(
+                                                                  context)
+                                                              .showSnackBar(
+                                                            SnackBar(
+                                                                content: Text(
+                                                                    'Failed to update batch: $e')),
+                                                          );
+                                                        }
                                                       },
                                                       items: productBatches
                                                           .map((batch) {
                                                         return DropdownMenuItem<
-                                                            String>(
+                                                            int>(
                                                           value: batch[
                                                                   'p_batch_id']
-                                                              .toString(),
+                                                              as int,
                                                           child: Text(batch[
                                                               'p_batch_name']),
                                                         );
@@ -474,18 +536,23 @@ class _BillingWidgetState extends State<BillingWidget> {
                                                               color:
                                                                   Colors.red),
                                                           onPressed: () {
-                                                            if (item[
+                                                            if (_billingItems[
+                                                                        index][
                                                                     'quantity'] >
                                                                 1) {
                                                               _updateQuantity(
                                                                   index,
-                                                                  item['quantity'] -
+                                                                  _billingItems[
+                                                                              index]
+                                                                          [
+                                                                          'quantity'] -
                                                                       1);
                                                             }
                                                           },
                                                         ),
                                                         Text(
-                                                          item['quantity']
+                                                          _billingItems[index]
+                                                                  ['quantity']
                                                               .toString(),
                                                           style: const TextStyle(
                                                               fontFamily:
@@ -498,11 +565,33 @@ class _BillingWidgetState extends State<BillingWidget> {
                                                               Icons.add,
                                                               color:
                                                                   Colors.green),
-                                                          onPressed: () {
-                                                            _updateQuantity(
-                                                                index,
-                                                                item['quantity'] +
-                                                                    1);
+                                                          onPressed: () async {
+                                                            try {
+                                                              await _checkBatchStock(
+                                                                  _billingItems[
+                                                                          index]
+                                                                      ['batch'],
+                                                                  _billingItems[
+                                                                              index]
+                                                                          [
+                                                                          'quantity'] +
+                                                                      1);
+                                                              _updateQuantity(
+                                                                  index,
+                                                                  _billingItems[
+                                                                              index]
+                                                                          [
+                                                                          'quantity'] +
+                                                                      1);
+                                                            } catch (e) {
+                                                              ScaffoldMessenger
+                                                                      .of(context)
+                                                                  .showSnackBar(
+                                                                SnackBar(
+                                                                    content: Text(
+                                                                        'Failed to update quantity: $e')),
+                                                              );
+                                                            }
                                                           },
                                                         ),
                                                       ],

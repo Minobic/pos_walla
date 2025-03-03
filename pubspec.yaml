@@ -39,6 +39,7 @@ dependencies:
   crypto: ^3.0.2
   barcode_widget: ^2.0.2
   printing: ^5.11.0
+  blue_thermal_printer: ^1.1.0
 
 dev_dependencies:
   flutter_test:

@@ -127,6 +127,33 @@ class _ProductBatchWidgetState extends State<ProductBatchWidget> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Dropdown for product selection
+                  DropdownButtonFormField<int>(
+                    value: _selectedProductId,
+                    decoration: InputDecoration(
+                      labelText: 'Select Product',
+                      labelStyle: TextStyle(fontFamily: 'Poppins'),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                    ),
+                    items: _products.map((product) {
+                      return DropdownMenuItem<int>(
+                        value: product['product_id'],
+                        child: Text(product['product_name']),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedProductId =
+                            value; // Update selected product ID
+                      });
+                    },
+                    validator: (value) =>
+                        value == null ? 'Please select a product' : null,
+                  ),
+                  const SizedBox(height: 12),
                   TextField(
                     controller: nameController,
                     decoration: InputDecoration(
@@ -161,33 +188,6 @@ class _ProductBatchWidgetState extends State<ProductBatchWidget> {
                         borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Dropdown for product selection
-                  DropdownButtonFormField<int>(
-                    value: _selectedProductId,
-                    decoration: InputDecoration(
-                      labelText: 'Select Product',
-                      labelStyle: TextStyle(fontFamily: 'Poppins'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                    ),
-                    items: _products.map((product) {
-                      return DropdownMenuItem<int>(
-                        value: product['product_id'],
-                        child: Text(product['product_name']),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedProductId =
-                            value; // Update selected product ID
-                      });
-                    },
-                    validator: (value) =>
-                        value == null ? 'Please select a product' : null,
                   ),
                 ],
               ),
@@ -272,6 +272,33 @@ class _ProductBatchWidgetState extends State<ProductBatchWidget> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Dropdown for product selection
+                  DropdownButtonFormField<int>(
+                    value: _selectedProductId,
+                    decoration: InputDecoration(
+                      labelText: 'Select Product',
+                      labelStyle: TextStyle(fontFamily: 'Poppins'),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                    ),
+                    items: _products.map((product) {
+                      return DropdownMenuItem<int>(
+                        value: product['product_id'],
+                        child: Text(product['product_name']),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedProductId =
+                            value; // Update selected product ID
+                      });
+                    },
+                    validator: (value) =>
+                        value == null ? 'Please select a product' : null,
+                  ),
+                  const SizedBox(height: 12),
                   TextField(
                     controller: nameController,
                     decoration: InputDecoration(
@@ -306,33 +333,6 @@ class _ProductBatchWidgetState extends State<ProductBatchWidget> {
                         borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Dropdown for product selection
-                  DropdownButtonFormField<int>(
-                    value: _selectedProductId,
-                    decoration: InputDecoration(
-                      labelText: 'Select Product',
-                      labelStyle: TextStyle(fontFamily: 'Poppins'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                    ),
-                    items: _products.map((product) {
-                      return DropdownMenuItem<int>(
-                        value: product['product_id'],
-                        child: Text(product['product_name']),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedProductId =
-                            value; // Update selected product ID
-                      });
-                    },
-                    validator: (value) =>
-                        value == null ? 'Please select a product' : null,
                   ),
                 ],
               ),

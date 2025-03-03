@@ -1,9 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../custom/SidebarHeader.dart';
 import '../../../services/ApiService.dart';
 import '../../../custom/GradientButton.dart';
 import '../../../custom/RedButton.dart';
+import 'package:blue_thermal_printer/blue_thermal_printer.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 class CheckoutWidget extends StatefulWidget {
   final String userName;
@@ -39,6 +44,7 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
   double _total = 0.0;
   List<String> _paymentMethods = [];
   String? _selectedPaymentMethod;
+  BlueThermalPrinter bluetooth = BlueThermalPrinter.instance;
 
   @override
   void initState() {
@@ -46,6 +52,19 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
     _subtotal = widget.totalPrice;
     _total = widget.totalPrice;
     _fetchPaymentMethods();
+    _initPrinter();
+  }
+
+  void _initPrinter() async {
+    // Initialize the printer
+    bool? isConnected = await bluetooth.isConnected;
+    if (isConnected != true) {
+      // Connect to the printer if not already connected
+      List<BluetoothDevice> devices = await bluetooth.getBondedDevices();
+      if (devices.isNotEmpty) {
+        await bluetooth.connect(devices[0]);
+      }
+    }
   }
 
   void _toggleSidebar() {
@@ -84,7 +103,7 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
     try {
       final invoice = await ApiService.createInvoice(
         userId: widget.userId,
-        customerName: _customerNameController.text, // Include customer name
+        customerName: _customerNameController.text,
         customerMobile: _mobileController.text,
         totalAmount: _total,
         subTotal: _subtotal,
@@ -96,14 +115,30 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
             'product_id': item['product_id'],
             'quantity': item['quantity'],
             'sale_price': item['sale_price'],
-            'p_batch_id':
-                item['batch'] ?? null, // Pass null if batch is not available
+            'p_batch_id': item['batch'] ?? null,
           };
         }).toList(),
       );
+
+      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Payment confirmed successfully')),
       );
+
+      await PdfBillGenerator.generateAndSavePdf(
+        customerName: _customerNameController.text,
+        mobileNumber: _mobileController.text,
+        paymentMethod: _selectedPaymentMethod ?? '',
+        billingItems: widget.billingItems,
+        subtotal: _subtotal,
+        discount: _discount,
+        tax: _tax,
+        total: _total,
+      );
+      // Print the bill
+      _printBill();
+
+      // Navigate back to billing page
       Navigator.pushReplacementNamed(
         context,
         '/billing',
@@ -116,6 +151,45 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
     } catch (e) {
       print('Failed to confirm payment: $e');
     }
+  }
+
+  void _printBill() async {
+    // Check if the printer is connected
+    bool? isConnected = await bluetooth.isConnected;
+    if (isConnected != true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Printer is not connected')),
+      );
+      return;
+    }
+
+    // Create the bill content
+    String billContent = """
+    Customer Name: ${_customerNameController.text}
+    Mobile: ${_mobileController.text}
+    Payment Method: $_selectedPaymentMethod
+    ----------------------------------------
+    Product Name\tQty\tPrice\tTotal
+    """;
+
+    for (var item in widget.billingItems) {
+      billContent += """
+    ${item['product_name']}\t${item['quantity']}\t${item['sale_price']}\t${item['total_price']}
+    """;
+    }
+
+    billContent += """
+    ----------------------------------------
+    Subtotal: $_subtotal
+    Discount: $_discount
+    Tax: $_tax
+    Total: $_total
+    ----------------------------------------
+    Thank you for your purchase!
+    """;
+
+    // Print the bill
+    bluetooth.printCustom(billContent, 1, 1);
   }
 
   void _removeItem(int index) {
@@ -598,5 +672,147 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
         ],
       ),
     );
+  }
+}
+
+class PdfBillGenerator {
+  static Future<void> generateAndSavePdf({
+    required String customerName,
+    required String mobileNumber,
+    required String paymentMethod,
+    required List<Map<String, dynamic>> billingItems,
+    required double subtotal,
+    required double discount,
+    required double tax,
+    required double total,
+  }) async {
+    // Define the page size for a 2-inch thermal printer
+    const double pageWidth = 58 * PdfPageFormat.mm; // 58mm width
+    const double pageHeight = 200 * PdfPageFormat.mm; // Adjust height as needed
+
+    // Create a PDF document
+    final pdf = pw.Document();
+
+    // Add a page to the PDF
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat(pageWidth, pageHeight),
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Header
+              pw.Center(
+                child: pw.Text(
+                  'Invoice',
+                  style: pw.TextStyle(
+                    fontSize: 14,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+              ),
+              pw.SizedBox(height: 5),
+              pw.Divider(),
+              pw.SizedBox(height: 5),
+
+              // Customer Details
+              pw.Text('Customer: $customerName'),
+              pw.Text('Mobile: $mobileNumber'),
+              pw.Text('Payment: $paymentMethod'),
+              pw.SizedBox(height: 10),
+              pw.Divider(),
+              pw.SizedBox(height: 10),
+
+              // Table Header
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Item',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  pw.Text('Qty',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  pw.Text('Price',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                  pw.Text('Total',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                ],
+              ),
+              pw.SizedBox(height: 5),
+              pw.Divider(),
+              pw.SizedBox(height: 5),
+
+              // Bill Items
+              ...billingItems.map((item) {
+                return pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text(item['product_name'].toString()),
+                    pw.Text(item['quantity'].toString()),
+                    pw.Text(item['sale_price'].toString()),
+                    pw.Text(item['total_price'].toString()),
+                  ],
+                );
+              }).toList(),
+
+              pw.SizedBox(height: 10),
+              pw.Divider(),
+              pw.SizedBox(height: 10),
+
+              // Totals
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Subtotal:'),
+                  pw.Text('Rs$subtotal'), // Replace ₹ with Rs
+                ],
+              ),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Discount:'),
+                  pw.Text('Rs$discount'), // Replace ₹ with Rs
+                ],
+              ),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Tax:'),
+                  pw.Text('Rs$tax'), // Replace ₹ with Rs
+                ],
+              ),
+              pw.Divider(),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    'Total:',
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  ),
+                  pw.Text(
+                    'Rs$total', // Replace ₹ with Rs
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 10),
+              pw.Divider(),
+              pw.SizedBox(height: 10),
+
+              // Footer
+              pw.Center(
+                child: pw.Text(
+                  'Thank you for your purchase!',
+                  style: pw.TextStyle(fontSize: 10),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    // Save the PDF to a file
+    final bytes = await pdf.save();
+    await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => bytes);
   }
 }

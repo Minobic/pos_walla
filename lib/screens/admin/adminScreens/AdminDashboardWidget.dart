@@ -1,8 +1,8 @@
-// welcome_widget.dart
+import 'package:flutter/material.dart';
 import 'package:flutter/material.dart';
 
-class AdminDashbordWidget extends StatelessWidget {
-  const AdminDashbordWidget({Key? key}) : super(key: key);
+class AdminDashboardWidget extends StatelessWidget {
+  const AdminDashboardWidget({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -37,15 +37,16 @@ class AdminDashbordWidget extends StatelessWidget {
                   ),
                 ),
                 // Menu Items
-                _buildMenuItem(Icons.dashboard, 'Dashboard', true),
-                _buildMenuItem(Icons.bar_chart, 'Statistics', false),
-                _buildMenuItem(Icons.description, 'Report', false),
-                _buildMenuItem(Icons.notifications, 'Notification', false),
-                _buildMenuItem(Icons.settings, 'Settings', false),
-                _buildMenuItem(Icons.logout, 'Logout', false),
+                _buildMenuItem(context, Icons.dashboard, 'Dashboard', true),
+                _buildMenuItem(context, Icons.bar_chart, 'Statistics', false),
+                _buildMenuItem(context, Icons.description, 'Report', false),
+                _buildMenuItem(
+                    context, Icons.notifications, 'Notification', false),
+                _buildMenuItem(context, Icons.settings, 'Settings', false),
+                _buildMenuItem(context, Icons.logout, 'Logout', false),
                 Spacer(),
-                _buildMenuItem(Icons.account_circle, 'Account', false),
-                _buildMenuItem(Icons.help, 'Help', false),
+                _buildMenuItem(context, Icons.account_circle, 'Account', false),
+                _buildMenuItem(context, Icons.help, 'Help', false),
                 SizedBox(height: 16),
               ],
             ),
@@ -180,7 +181,8 @@ class AdminDashbordWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String title, bool isSelected) {
+  Widget _buildMenuItem(
+      BuildContext context, IconData icon, String title, bool isSelected) {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
@@ -194,7 +196,12 @@ class AdminDashbordWidget extends StatelessWidget {
           style: TextStyle(color: Colors.white),
         ),
         selected: isSelected,
-        onTap: () {},
+        onTap: () {
+          Navigator.pushNamed(
+            context,
+            '/WelcomeWidget',
+          );
+        },
       ),
     );
   }
