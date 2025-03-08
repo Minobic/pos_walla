@@ -11,6 +11,9 @@ import 'screens/user/userScreens/InventoryWidget.dart';
 import 'screens/user/userScreens/BillingWidget.dart';
 import 'screens/user/userScreens/BarcodeGeneratorWidget.dart';
 import 'screens/admin/adminScreens/AdminDashboardWidget.dart';
+import 'screens/admin/adminScreens/TransactionWidget.dart';
+import 'screens/admin/adminScreens/CustomerWidget.dart';
+import 'screens/admin/adminScreens/ReportWidget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -139,8 +142,27 @@ class _MyAppState extends State<MyApp> {
               ),
             );
           case '/adminDashboard':
+            final args = settings.arguments
+                as Map<String, dynamic>; // Expecting a Map with user data
             return MaterialPageRoute(
-                builder: (context) => const AdminDashboardWidget());
+              builder: (context) => AdminDashboardWidget(
+                userName: args['name'] ??
+                    'User ', // Provide a default value if not found
+                userRole: args['role'] ??
+                    'Role', // Provide a default value if not found
+                userId: args['userId'] ?? 1,
+              ),
+            );
+          case '/transactions':
+            return MaterialPageRoute(
+                builder: (context) =>
+                    const TransactionWidget(selectedPeriod: 'daily'));
+          case '/customers':
+            return MaterialPageRoute(
+                builder: (context) => const CustomerWidget());
+          case '/reports':
+            return MaterialPageRoute(
+                builder: (context) => const ReportWidget());
           default:
             return MaterialPageRoute(
                 builder: (context) => const WelcomeWidget());

@@ -1,10 +1,10 @@
-from datetime import datetime, timedelta
-import pytz
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
 from flask_cors import CORS
 import hashlib
 import re
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:mayank@localhost/pos_db'
@@ -13,8 +13,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 CORS(app)
 
 db = SQLAlchemy(app)
-
-IST = pytz.timezone('Asia/Kolkata')
 
 # User Table
 class User(db.Model):
@@ -28,8 +26,8 @@ class User(db.Model):
     last_name = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     phone = db.Column(db.String(255), nullable=False)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(IST))
-    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(IST), onupdate=lambda: datetime.now(IST))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 # Category Table
 class Category(db.Model):
@@ -37,8 +35,8 @@ class Category(db.Model):
     cat_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     cat_name = db.Column(db.String(255), unique=True, nullable=False)
     cat_description = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(IST))
-    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(IST), onupdate=lambda: datetime.now(IST))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 # Product Table
 class Product(db.Model):
@@ -49,8 +47,8 @@ class Product(db.Model):
     sale_price = db.Column(db.Numeric(10, 2), nullable=False)
     mrp_price = db.Column(db.Numeric(10, 2), nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('Category.cat_id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(IST))
-    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(IST), onupdate=lambda: datetime.now(IST))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 # Product Batch Table
 class ProductBatch(db.Model):
@@ -60,8 +58,8 @@ class ProductBatch(db.Model):
     p_id = db.Column(db.Integer, db.ForeignKey('Product.product_id'), nullable=False)
     p_batch_exp = db.Column(db.Date, nullable=False)
     p_batch_mfg = db.Column(db.Date, nullable=False)
-    p_batch_created_at = db.Column(db.DateTime, default=lambda: datetime.now(IST))
-    p_batch_updated_at = db.Column(db.DateTime, default=lambda: datetime.now(IST), onupdate=lambda: datetime.now(IST))
+    p_batch_created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    p_batch_updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 # Barcode Generator Table
 class BarcodeGenerator(db.Model):
@@ -72,8 +70,8 @@ class BarcodeGenerator(db.Model):
     barcode_number = db.Column(db.String(255), unique=True, nullable=False)  # Renamed from barcode_value
     line_1 = db.Column(db.String(255))  # New field
     line_2 = db.Column(db.String(255))  # New field
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(IST))
-    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(IST), onupdate=lambda: datetime.now(IST))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 # Inventory Table
 class Inventory(db.Model):
@@ -83,8 +81,8 @@ class Inventory(db.Model):
     p_batch_id = db.Column(db.Integer, db.ForeignKey('ProductBatch.p_batch_id'), nullable=False)
     stock_level = db.Column(db.Enum('high', 'low', 'medium'), nullable=False)
     p_batch_quantity = db.Column(db.Integer, nullable=False)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(IST))
-    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(IST), onupdate=lambda: datetime.now(IST))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 # Customer Table
 class Customer(db.Model):
@@ -106,8 +104,8 @@ class Invoice(db.Model):
     tax_id = db.Column(db.Integer, db.ForeignKey('Tax.tax_id'))
     tax_amount = db.Column(db.Numeric(10, 2))
     loyalty_points = db.Column(db.Integer)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(IST))
-    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(IST), onupdate=lambda: datetime.now(IST))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 # InvoiceItem Table
 class InvoiceItem(db.Model):
@@ -118,7 +116,7 @@ class InvoiceItem(db.Model):
     p_batch_id = db.Column(db.Integer, db.ForeignKey('ProductBatch.p_batch_id'), nullable=True)
     quantity = db.Column(db.Integer, nullable=False)
     price = db.Column(db.Numeric(10, 2), nullable=False)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(IST))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # InvoicePayment Table
 class InvoicePayment(db.Model):
@@ -127,7 +125,7 @@ class InvoicePayment(db.Model):
     invoice_id = db.Column(db.Integer, db.ForeignKey('Invoice.invoice_id'), nullable=False)
     amount = db.Column(db.Numeric(10, 2), nullable=False)
     payment_method = db.Column(db.Enum('cash', 'credit_card', 'debit_card', 'mobile_payment'), nullable=False)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(IST))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # Coupon Table
 class Coupon(db.Model):
@@ -138,7 +136,7 @@ class Coupon(db.Model):
     value = db.Column(db.Numeric(10, 2), nullable=False)
     start_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime, nullable=False)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(IST))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # Tax Table
 class Tax(db.Model):
@@ -147,8 +145,8 @@ class Tax(db.Model):
     tax_name = db.Column(db.String(255), nullable=False)
     tax_rate = db.Column(db.Numeric(5, 2), nullable=False)
     gst = db.Column(db.Numeric(5, 2), nullable=False)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(IST))
-    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(IST), onupdate=lambda: datetime.now(IST))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 # Loyalty Points Table
 class LoyaltyPoints(db.Model):
@@ -156,8 +154,8 @@ class LoyaltyPoints(db.Model):
     loyalty_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('Customer.customer_id'), nullable=False)
     points = db.Column(db.Integer, nullable=False)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(IST))
-    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(IST), onupdate=lambda: datetime.now(IST))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 # Registration Endpoint
 @app.route('/register', methods=['POST'])
@@ -761,6 +759,8 @@ def create_invoice():
 
     return jsonify({'message': 'Invoice created successfully', 'invoice_id': new_invoice.invoice_id}), 201
 
+
+
 @app.route('/payment_methods', methods=['GET'])
 def get_payment_methods():
     payment_methods = ['cash', 'credit_card', 'debit_card', 'mobile_payment']
@@ -785,25 +785,24 @@ def get_users():
         })
     return jsonify(users_list), 200
 
+from datetime import datetime, timedelta
+
 @app.route('/transactions', methods=['GET'])
 def get_transactions():
     period = request.args.get('period', 'daily')  # Default to daily
-    now = datetime.now(pytz.timezone('Asia/Kolkata'))
+    now = datetime.utcnow()
 
     # Calculate the start date based on the selected period
     if period == 'daily':
-        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        start_date = now - timedelta(days=1)
     elif period == 'weekly':
-        start_date = now - timedelta(days=now.weekday())
-        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        start_date = now - timedelta(weeks=1)
     elif period == 'monthly':
-        start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        start_date = now - timedelta(days=30)
     elif period == 'quarterly':
-        current_month = now.month
-        quarter_start_month = 3 * ((current_month - 1) // 3) + 1
-        start_date = now.replace(month=quarter_start_month, day=1, hour=0, minute=0, second=0, microsecond=0)
+        start_date = now - timedelta(days=90)
     elif period == 'yearly':
-        start_date = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        start_date = now - timedelta(days=365)
     elif period == 'custom':
         # Handle custom date range
         start_date = now - timedelta(days=1)  # Default to daily for now
@@ -824,54 +823,6 @@ def get_transactions():
         transactions_list.append({
             'invoice_id': invoice.invoice_id,
             'customer_name': customer_name,  # Fetch customer_name from the joined Customer table
-            'total_amount': float(invoice.total_amount),
-            'payment_method': payment_method,
-            'created_at': invoice.created_at.astimezone(pytz.timezone('Asia/Kolkata')).strftime('%Y-%m-%d %H:%M:%S'),
-        })
-
-    return jsonify(transactions_list), 200
-
-@app.route('/customers', methods=['GET'])
-def get_customers():
-    customers = Customer.query.all()
-    customers_list = []
-    for customer in customers:
-        customers_list.append({
-            'customer_id': customer.customer_id,
-            'customer_name': customer.customer_name,
-            'customer_mobile': customer.customer_mobile,
-        })
-    return jsonify(customers_list), 200
-
-@app.route('/customers/<int:customer_id>', methods=['GET'])
-def get_customer_details(customer_id):
-    customer = Customer.query.get(customer_id)
-    if not customer:
-        return jsonify({'error': 'Customer not found'}), 404
-
-    # Calculate total amount spent by the customer
-    total_amount = db.session.query(db.func.sum(Invoice.total_amount)).filter(Invoice.customer_id == customer_id).scalar() or 0.0
-
-    return jsonify({
-        'customer_id': customer.customer_id,
-        'customer_name': customer.customer_name,
-        'customer_mobile': customer.customer_mobile,
-        'total_amount': float(total_amount),
-    }), 200
-
-@app.route('/customers/<int:customer_id>/transactions', methods=['GET'])
-def get_customer_transactions(customer_id):
-    transactions = (
-        db.session.query(Invoice, InvoicePayment.payment_method)
-        .join(InvoicePayment, Invoice.invoice_id == InvoicePayment.invoice_id)
-        .filter(Invoice.customer_id == customer_id)
-        .all()
-    )
-
-    transactions_list = []
-    for invoice, payment_method in transactions:
-        transactions_list.append({
-            'invoice_id': invoice.invoice_id,
             'total_amount': float(invoice.total_amount),
             'payment_method': payment_method,
             'created_at': invoice.created_at.strftime('%Y-%m-%d %H:%M:%S'),

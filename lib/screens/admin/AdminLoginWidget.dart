@@ -12,11 +12,8 @@ class AdminLoginWidget extends StatefulWidget {
 class _AdminLoginWidgetState extends State<AdminLoginWidget> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
-  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
   bool _passwordVisible = false;
-  bool _confirmPasswordVisible = false;
 
   // Hardcoded admin credentials
   final String _adminUsername = 'admin';
@@ -25,9 +22,7 @@ class _AdminLoginWidgetState extends State<AdminLoginWidget> {
   @override
   void dispose() {
     _usernameController.dispose();
-    _emailController.dispose();
     _passwordController.dispose();
-    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -167,8 +162,15 @@ class _AdminLoginWidgetState extends State<AdminLoginWidget> {
                                           _passwordController.text ==
                                               _adminPassword) {
                                         // Navigate to AdminDashboard
-                                        Navigator.pushNamed(
-                                            context, '/adminDashboard');
+                                        Navigator.pushReplacementNamed(
+                                          context,
+                                          '/adminDashboard',
+                                          arguments: {
+                                            'name': 'Admin',
+                                            'role': 'Admin',
+                                            'userId': 1, // Example userId
+                                          },
+                                        );
                                       } else {
                                         // Failed login
                                         ScaffoldMessenger.of(context)

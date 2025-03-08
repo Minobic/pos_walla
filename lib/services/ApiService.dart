@@ -583,4 +583,61 @@ class ApiService {
       throw Exception('Failed to fetch payment methods: ${response.body}');
     }
   }
+
+  static Future<List<dynamic>> fetchEmployees() async {
+    final url = Uri.parse('$_baseUrl/users'); // Adjust the endpoint as needed
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to fetch employees: ${response.body}');
+    }
+  }
+
+  static Future<List<dynamic>> fetchTransactions(String period) async {
+    final url = Uri.parse('$_baseUrl/transactions?period=$period');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to fetch transactions: ${response.body}');
+    }
+  }
+
+  static Future<List<dynamic>> fetchCustomers() async {
+    final url = Uri.parse('$_baseUrl/customers');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to fetch customers: ${response.body}');
+    }
+  }
+
+  static Future<Map<String, dynamic>> fetchCustomerDetails(
+      int customerId) async {
+    final url = Uri.parse('$_baseUrl/customers/$customerId');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to fetch customer details: ${response.body}');
+    }
+  }
+
+  static Future<List<dynamic>> fetchCustomerTransactions(int customerId) async {
+    final url = Uri.parse('$_baseUrl/customers/$customerId/transactions');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception(
+          'Failed to fetch customer transactions: ${response.body}');
+    }
+  }
 }

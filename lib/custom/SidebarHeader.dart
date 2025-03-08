@@ -208,7 +208,7 @@ class _SidebarState extends State<Sidebar> {
                   _buildMenuItem('Settings', Icons.settings, false, () {}),
                   _buildMenuItem('Help', Icons.help, false, () {}),
                   _buildMenuItem('Log Out', Icons.logout, false, () {
-                    Navigator.pushReplacementNamed(context, '/login');
+                    Navigator.pushReplacementNamed(context, '/');
                   }),
                 ],
               ),
@@ -280,7 +280,7 @@ class Header extends StatelessWidget {
                 ),
               ),
               Text(
-                'Let\'s take a detailed look at financial situation today',
+                'Where Simplicity Meets Sale\'s with POS Walla',
                 style: TextStyle(
                   color: Colors.white70,
                   fontFamily: 'Poppins',
@@ -335,7 +335,7 @@ class Header extends StatelessWidget {
                     Navigator.pushNamed(context, '/profile');
                   } else if (value == 'logout') {
                     // Handle Logout option
-                    Navigator.pushReplacementNamed(context, '/login');
+                    Navigator.pushReplacementNamed(context, '/');
                   }
                 },
                 itemBuilder: (BuildContext context) {
