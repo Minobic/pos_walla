@@ -234,8 +234,8 @@ def get_categories():
             'cat_id': category.cat_id,
             'cat_name': category.cat_name,
             'cat_description': category.cat_description,
-            'created_at': category.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'updated_at': category.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+            'created_at': category.created_at.strftime('%d-%m-%Y %H:%M:%S'),
+            'updated_at': category.updated_at.strftime('%d-%m-%Y %H:%M:%S')
         })
     return jsonify(categories_list), 200
 
@@ -260,8 +260,8 @@ def add_category():
         'cat_id': new_category.cat_id,
         'cat_name': new_category.cat_name,
         'cat_description': new_category.cat_description,
-        'created_at': new_category.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-        'updated_at': new_category.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+        'created_at': new_category.created_at.strftime('%d-%m-%Y %H:%M:%S'),
+        'updated_at': new_category.updated_at.strftime('%d-%m-%Y %H:%M:%S')
     }), 201
 
 @app.route('/categories/<int:cat_id>', methods=['PUT'])
@@ -284,8 +284,8 @@ def update_category(cat_id):
         'cat_id': category.cat_id,
         'cat_name': category.cat_name,
         'cat_description': category.cat_description,
-        'created_at': category.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-        'updated_at': category.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+        'created_at': category.created_at.strftime('%d-%m-%Y %H:%M:%S'),
+        'updated_at': category.updated_at.strftime('%d-%m-%Y %H:%M:%S')
     }), 200
 
 @app.route('/categories/<int:cat_id>', methods=['DELETE'])
@@ -313,8 +313,8 @@ def get_products():
             'mrp_price': float(product.mrp_price),
             'category_id': product.category_id,
             'category_name': category_name,  # Include category name
-            'created_at': product.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'updated_at': product.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+            'created_at': product.created_at.strftime('%d-%m-%Y %H:%M:%S'),
+            'updated_at': product.updated_at.strftime('%d-%m-%Y %H:%M:%S')
         })
     return jsonify(products_list), 200
 
@@ -343,8 +343,8 @@ def add_product():
         'sale_price': float(new_product.sale_price),
         'mrp_price': float(new_product.mrp_price),
         'category_id': new_product.category_id,
-        'created_at': new_product.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-        'updated_at': new_product.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+        'created_at': new_product.created_at.strftime('%d-%m-%Y %H:%M:%S'),
+        'updated_at': new_product.updated_at.strftime('%d-%m-%Y %H:%M:%S')
     }), 201
 
 @app.route('/products/<int:product_id>', methods=['PUT'])
@@ -372,8 +372,8 @@ def update_product(product_id):
         'sale_price': float(product.sale_price),
         'mrp_price': float(product.mrp_price),
         'category_id': product.category_id,
-        'created_at': product.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-        'updated_at': product.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+        'created_at': product.created_at.strftime('%d-%m-%Y %H:%M:%S'),
+        'updated_at': product.updated_at.strftime('%d-%m-%Y %H:%M:%S')
     }), 200
 
 @app.route('/products/<int:product_id>', methods=['DELETE'])
@@ -399,12 +399,12 @@ def get_product_batches():
         product_batches_list.append({
             'p_batch_id': batch.p_batch_id,
             'p_batch_name': batch.p_batch_name,
-            'p_batch_mfg': batch.p_batch_mfg.strftime('%Y-%m-%d'),  # Format date
-            'p_batch_exp': batch.p_batch_exp.strftime('%Y-%m-%d'),  # Format date
+            'p_batch_mfg': batch.p_batch_mfg.strftime('%d-%m-%Y'),  # Format date
+            'p_batch_exp': batch.p_batch_exp.strftime('%d-%m-%Y'),  # Format date
             'p_id': batch.p_id,
             'product_name': product_name,  # Include product name
-            'created_at': batch.p_batch_created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'updated_at': batch.p_batch_updated_at.strftime('%Y-%m-%d %H:%M:%S')
+            'created_at': batch.p_batch_created_at.strftime('%d-%m-%Y %H:%M:%S'),
+            'updated_at': batch.p_batch_updated_at.strftime('%d-%m-%Y %H:%M:%S')
         })
     return jsonify(product_batches_list), 200
 
@@ -419,8 +419,8 @@ def add_product_batch():
     # Create new product batch
     new_batch = ProductBatch(
         p_batch_name=data['p_batch_name'],
-        p_batch_mfg=datetime.strptime(data['p_batch_mfg'], '%Y-%m-%d').date(),
-        p_batch_exp=datetime.strptime(data['p_batch_exp'], '%Y-%m-%d').date(),
+        p_batch_mfg=datetime.strptime(data['p_batch_mfg'], '%d-%m-%Y').date(),
+        p_batch_exp=datetime.strptime(data['p_batch_exp'], '%d-%m-%Y').date(),
         p_id=data['p_id']
     )
 
@@ -430,11 +430,11 @@ def add_product_batch():
     return jsonify({
         'p_batch_id': new_batch.p_batch_id,
         'p_batch_name': new_batch.p_batch_name,
-        'p_batch_mfg': new_batch.p_batch_mfg.strftime('%Y-%m-%d'),
-        'p_batch_exp': new_batch.p_batch_exp.strftime('%Y-%m-%d'),
+        'p_batch_mfg': new_batch.p_batch_mfg.strftime('%d-%m-%Y'),
+        'p_batch_exp': new_batch.p_batch_exp.strftime('%d-%m-%Y'),
         'p_id': new_batch.p_id,
-        'created_at': new_batch.p_batch_created_at.strftime('%Y-%m-%d %H:%M:%S'),
-        'updated_at': new_batch.p_batch_updated_at.strftime('%Y-%m-%d %H:%M:%S')
+        'created_at': new_batch.p_batch_created_at.strftime('%d-%m-%Y %H:%M:%S'),
+        'updated_at': new_batch.p_batch_updated_at.strftime('%d-%m-%Y %H:%M:%S')
     }), 201
 
 @app.route('/product_batches/<int:batch_id>', methods=['PUT'])
@@ -450,19 +450,19 @@ def update_product_batch(batch_id):
         return jsonify({'error': 'Product batch not found'}), 404
 
     batch.p_batch_name = data['p_batch_name']
-    batch.p_batch_mfg = datetime.strptime(data['p_batch_mfg'], '%Y-%m-%d').date()
-    batch.p_batch_exp = datetime.strptime(data['p_batch_exp'], '%Y-%m-%d').date()
+    batch.p_batch_mfg = datetime.strptime(data['p_batch_mfg'], '%d-%m-%Y').date()
+    batch.p_batch_exp = datetime.strptime(data['p_batch_exp'], '%d-%m-%Y').date()
     batch.p_id = data['p_id']
     db.session.commit()
 
     return jsonify({
         'p_batch_id': batch.p_batch_id,
         'p_batch_name': batch.p_batch_name,
-        'p_batch_mfg': batch.p_batch_mfg.strftime('%Y-%m-%d'),
-        'p_batch_exp': batch.p_batch_exp.strftime('%Y-%m-%d'),
+        'p_batch_mfg': batch.p_batch_mfg.strftime('%d-%m-%Y'),
+        'p_batch_exp': batch.p_batch_exp.strftime('%d-%m-%Y'),
         'p_id': batch.p_id,
-        'created_at': batch.p_batch_created_at.strftime('%Y-%m-%d %H:%M:%S'),
-        'updated_at': batch.p_batch_updated_at.strftime('%Y-%m-%d %H:%M:%S')
+        'created_at': batch.p_batch_created_at.strftime('%d-%m-%Y %H:%M:%S'),
+        'updated_at': batch.p_batch_updated_at.strftime('%d-%m-%Y %H:%M:%S')
     }), 200
 
 @app.route('/product_batches/<int:batch_id>', methods=['DELETE'])
@@ -495,8 +495,8 @@ def get_inventories():
             'p_batch_quantity': inventory.p_batch_quantity,
             'product_name': product_name,  # Include product name
             'p_batch_name': batch_name,     # Include product batch name
-            'created_at': inventory.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'updated_at': inventory.updated_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'created_at': inventory.created_at.strftime('%d-%m-%Y %H:%M:%S'),
+            'updated_at': inventory.updated_at.strftime('%d-%m-%Y %H:%M:%S'),
         })
     return jsonify(inventories_list), 200
 
@@ -524,8 +524,8 @@ def add_inventory():
         'p_batch_id': new_inventory.p_batch_id,
         'stock_level': new_inventory.stock_level,
         'p_batch_quantity': new_inventory.p_batch_quantity,
-        'created_at': new_inventory.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-        'updated_at': new_inventory.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+        'created_at': new_inventory.created_at.strftime('%d-%m-%Y %H:%M:%S'),
+        'updated_at': new_inventory.updated_at.strftime('%d-%m-%Y %H:%M:%S')
     }), 201
 
 # Update an existing inventory
@@ -552,8 +552,8 @@ def update_inventory(inventory_id):
         'p_batch_id': inventory.p_batch_id,
         'stock_level': inventory.stock_level,
         'p_batch_quantity': inventory.p_batch_quantity,
-        'created_at': inventory.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-        'updated_at': inventory.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+        'created_at': inventory.created_at.strftime('%d-%m-%Y %H:%M:%S'),
+        'updated_at': inventory.updated_at.strftime('%d-%m-%Y %H:%M:%S')
     }), 200
 
 # Delete an inventory
@@ -580,8 +580,8 @@ def get_barcodes():
             'barcode_number': barcode.barcode_number,
             'line_1': barcode.line_1,
             'line_2': barcode.line_2,
-            'created_at': barcode.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'updated_at': barcode.updated_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'created_at': barcode.created_at.strftime('%d-%m-%Y %H:%M:%S'),
+            'updated_at': barcode.updated_at.strftime('%d-%m-%Y %H:%M:%S'),
         })
     return jsonify(barcodes_list), 200
 
@@ -616,8 +616,8 @@ def add_barcode():
         'barcode_number': new_barcode.barcode_number,
         'line_1': new_barcode.line_1,
         'line_2': new_barcode.line_2,
-        'created_at': new_barcode.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-        'updated_at': new_barcode.updated_at.strftime('%Y-%m-%d %H:%M:%S'),
+        'created_at': new_barcode.created_at.strftime('%d-%m-%Y %H:%M:%S'),
+        'updated_at': new_barcode.updated_at.strftime('%d-%m-%Y %H:%M:%S'),
     }), 201
 
 @app.route('/barcodes/<int:barcode_id>', methods=['PUT'])
@@ -647,8 +647,8 @@ def update_barcode(barcode_id):
         'barcode_number': barcode.barcode_number,
         'line_1': barcode.line_1,
         'line_2': barcode.line_2,
-        'created_at': barcode.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-        'updated_at': barcode.updated_at.strftime('%Y-%m-%d %H:%M:%S'),
+        'created_at': barcode.created_at.strftime('%d-%m-%Y %H:%M:%S'),
+        'updated_at': barcode.updated_at.strftime('%d-%m-%Y %H:%M:%S'),
     }), 200
 
 @app.route('/barcodes/<int:barcode_id>', methods=['DELETE'])
@@ -780,8 +780,8 @@ def get_users():
             'phone': user.phone,
             'role': user.role,
             'status': user.status,
-            'created_at': user.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'updated_at': user.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+            'created_at': user.created_at.strftime('%d-%m-%Y %H:%M:%S'),
+            'updated_at': user.updated_at.strftime('%d-%m-%Y %H:%M:%S')
         })
     return jsonify(users_list), 200
 
@@ -826,7 +826,7 @@ def get_transactions():
             'customer_name': customer_name,  # Fetch customer_name from the joined Customer table
             'total_amount': float(invoice.total_amount),
             'payment_method': payment_method,
-            'created_at': invoice.created_at.astimezone(pytz.timezone('Asia/Kolkata')).strftime('%Y-%m-%d %H:%M:%S'),
+            'created_at': invoice.created_at.astimezone(pytz.timezone('Asia/Kolkata')).strftime('%d-%m-%Y %H:%M:%S'),
         })
 
     return jsonify(transactions_list), 200
@@ -874,7 +874,7 @@ def get_customer_transactions(customer_id):
             'invoice_id': invoice.invoice_id,
             'total_amount': float(invoice.total_amount),
             'payment_method': payment_method,
-            'created_at': invoice.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'created_at': invoice.created_at.strftime('%d-%m-%Y %H:%M:%S'),
         })
 
     return jsonify(transactions_list), 200

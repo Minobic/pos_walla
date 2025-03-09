@@ -57,11 +57,27 @@ class _BillingWidgetState extends State<BillingWidget> {
     });
   }
 
-  Future<void> _fetchProductBatches() async {
+  // Function to convert "DD-MM-YYYY" to ISO 8601 format
+  String convertToIsoFormat(String dateStr) {
+    // Split the date string into components
+    List<String> dateParts = dateStr.split('-');
+    // Rearrange the components to match the ISO 8601 format
+    String isoDateStr =
+        '${dateParts[2]}-${dateParts[1]}-${dateParts[0]}T00:00:00';
+    return isoDateStr;
+  }
+
+// Example usage in your code
+  void _fetchProductBatches() async {
     try {
       final batches = await ApiService.fetchProductBatches();
       setState(() {
         _productBatches = List<Map<String, dynamic>>.from(batches);
+        // Convert date formats if necessary
+        for (var batch in _productBatches) {
+          batch['p_batch_mfg'] = convertToIsoFormat(batch['p_batch_mfg']);
+          batch['p_batch_exp'] = convertToIsoFormat(batch['p_batch_exp']);
+        }
       });
     } catch (e) {
       print('Failed to fetch product batches: $e');

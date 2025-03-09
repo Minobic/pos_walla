@@ -53,6 +53,12 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
   Set<String> _existingProductNames = {};
   List<dynamic> _selectedBarcodes = []; // Track selected barcodes
 
+  // New variables for MRP, SRP, and dropdown selections
+  String? selectedLine1Option;
+  String? selectedLine2Option;
+  double? productMrp;
+  double? productSrp;
+
   @override
   void initState() {
     super.initState();
@@ -104,21 +110,18 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
     }
   }
 
-  Future<void> _fetchProducts() async {
-    try {
-      final products =
-          await ApiService.fetchProducts(); // Fetch products from API
+  void _onProductSelected(int? productId) {
+    if (productId != null) {
+      final selectedProduct =
+          _products.firstWhere((product) => product['product_id'] == productId);
       setState(() {
-        // Filter out products that already have barcodes
-        _products = products.where((product) {
-          String productName =
-              product['product_name'] as String; // Ensure this is a String
-          bool exists = _existingProductNames.contains(productName);
-          return !exists; // Keep products that do not exist in the barcodes
-        }).toList();
+        productMrp = selectedProduct['mrp_price'];
+        productSrp = selectedProduct['sale_price'];
+        selectedLine1Option = null; // Reset the selected option
+        selectedLine2Option = null; // Reset the selected option
+        _productNameController.text = selectedProduct[
+            'product_name']; // Set the product name in the controller
       });
-    } catch (e) {
-      print('Failed to fetch products: $e');
     }
   }
 
@@ -162,6 +165,8 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
       _noOfLabelsController.clear(); // Clear the number of labels field
       _generatedBarcode = ''; // Reset the generated barcode
       _selectedBarcodes.clear(); // Clear selected barcodes
+      selectedLine1Option = null; // Reset line 1 option
+      selectedLine2Option = null; // Reset line 2 option
     });
   }
 
@@ -204,6 +209,24 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
     );
   }
 
+  Future<void> _fetchProducts() async {
+    try {
+      final products =
+          await ApiService.fetchProducts(); // Fetch products from API
+      setState(() {
+        // Filter out products that already have barcodes
+        _products = products.where((product) {
+          String productName =
+              product['product_name'] as String; // Ensure this is a String
+          bool exists = _existingProductNames.contains(productName);
+          return !exists; // Keep products that do not exist in the barcodes
+        }).toList();
+      });
+    } catch (e) {
+      print('Failed to fetch products: $e');
+    }
+  }
+
   void _addBarcode() async {
     if (_formKey.currentState?.validate() ?? false) {
       try {
@@ -212,8 +235,12 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
           productName: _productNameController.text,
           barcodeNumber: _assignCodeController.text,
           barcodeHeader: _headerController.text,
-          line1: _line1Controller.text,
-          line2: _line2Controller.text,
+          line1: selectedLine1Option == 'Custom'
+              ? _line1Controller.text
+              : selectedLine1Option ?? '',
+          line2: selectedLine2Option == 'Custom'
+              ? _line2Controller.text
+              : selectedLine2Option ?? '',
         );
 
         setState(() {
@@ -225,7 +252,9 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
           _assignCodeController.text = newBarcode['barcode_number'];
           _line1Controller.text = newBarcode['line_1'];
           _line2Controller.text = newBarcode['line_2'];
-          _fetchProducts(); // Fetch products again to update the list
+          _clearFields();
+          _fetchBarcodes();
+          _fetchProducts();
         });
 
         await _fetchBarcodes();
@@ -424,6 +453,8 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
           _barcodes.removeWhere((b) => b['barcode_id'] == barcodeId);
           _filteredBarcodes = _barcodes;
           _selectedBarcodes.removeWhere((b) => b['barcode_id'] == barcodeId);
+          _fetchBarcodes();
+          _fetchProducts();
         });
       } catch (e) {
         print('Failed to delete barcode: $e');
@@ -857,6 +888,8 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
     );
   }
 
+  // Inside the _BarcodeGeneratorWidgetState class
+
   @override
   Widget build(BuildContext context) {
     final paginatedBarcodes = _getPaginatedBarcodes();
@@ -893,8 +926,7 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
                               Expanded(
                                 child: Card(
                                   elevation: 1,
-                                  color: Colors
-                                      .white, // Set background color to white
+                                  color: Colors.white,
                                   child: Padding(
                                     padding: EdgeInsets.all(24),
                                     child: Form(
@@ -903,6 +935,7 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
                                         children: [
                                           Row(
                                             children: [
+                                              // In the build method, ensure the DropdownButtonFormField for product selection calls _onProductSelected
                                               Expanded(
                                                 child: DropdownButtonFormField<
                                                     int>(
@@ -929,10 +962,8 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
                                                       child: Text(product[
                                                           'product_name']),
                                                       onTap: () {
-                                                        _productNameController
-                                                                .text =
-                                                            product[
-                                                                'product_name']; // Set product name
+                                                        _onProductSelected(product[
+                                                            'product_id']); // Call the method to set the product details
                                                       },
                                                     );
                                                   }).toList(),
@@ -941,14 +972,6 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
                                                       _selectedProductId =
                                                           value;
                                                       _generateBarcode();
-                                                      _productNameController
-                                                          .text = _products
-                                                              .firstWhere(
-                                                                  (product) =>
-                                                                      product[
-                                                                          'product_id'] ==
-                                                                      value)[
-                                                          'product_name']; // Set product name
                                                     });
                                                   },
                                                   validator: (value) => value ==
@@ -976,11 +999,67 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
                                               ),
                                               SizedBox(width: 16),
                                               Expanded(
-                                                child: _buildInputField(
-                                                    'Line 1', _line1Controller),
+                                                child: DropdownButtonFormField<
+                                                    String>(
+                                                  value: selectedLine1Option,
+                                                  decoration: InputDecoration(
+                                                    labelText: 'Line 1',
+                                                    labelStyle: TextStyle(
+                                                        fontFamily: 'Poppins'),
+                                                    border: OutlineInputBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              15),
+                                                      borderSide: BorderSide(
+                                                          color: Colors
+                                                              .grey.shade300),
+                                                    ),
+                                                  ),
+                                                  items: [
+                                                    'MRP: ${productMrp?.toStringAsFixed(2) ?? ''}',
+                                                    'SRP: ${productSrp?.toStringAsFixed(2) ?? ''}',
+                                                    'Custom'
+                                                  ].map((String option) {
+                                                    return DropdownMenuItem<
+                                                        String>(
+                                                      value: option,
+                                                      child: Text(option),
+                                                    );
+                                                  }).toList(),
+                                                  onChanged: (value) {
+                                                    setState(() {
+                                                      selectedLine1Option =
+                                                          value;
+                                                      if (value == 'Custom') {
+                                                        _line1Controller
+                                                            .clear(); // Clear the controller for custom input
+                                                      }
+                                                    });
+                                                  },
+                                                ),
                                               ),
                                             ],
                                           ),
+                                          // Custom input field for Line 1
+                                          if (selectedLine1Option == 'Custom')
+                                            SizedBox(height: 16),
+                                          if (selectedLine1Option == 'Custom')
+                                            TextField(
+                                              controller: _line1Controller,
+                                              decoration: InputDecoration(
+                                                labelText:
+                                                    'Enter Custom Line 1',
+                                                labelStyle: TextStyle(
+                                                    fontFamily: 'Poppins'),
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(15),
+                                                  borderSide: BorderSide(
+                                                      color:
+                                                          Colors.grey.shade300),
+                                                ),
+                                              ),
+                                            ),
                                           SizedBox(height: 16),
                                           Row(
                                             children: [
@@ -991,11 +1070,67 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
                                               ),
                                               SizedBox(width: 16),
                                               Expanded(
-                                                child: _buildInputField(
-                                                    'Line 2', _line2Controller),
+                                                child: DropdownButtonFormField<
+                                                    String>(
+                                                  value: selectedLine2Option,
+                                                  decoration: InputDecoration(
+                                                    labelText: 'Line 2',
+                                                    labelStyle: TextStyle(
+                                                        fontFamily: 'Poppins'),
+                                                    border: OutlineInputBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              15),
+                                                      borderSide: BorderSide(
+                                                          color: Colors
+                                                              .grey.shade300),
+                                                    ),
+                                                  ),
+                                                  items: [
+                                                    'MRP: ${productMrp?.toStringAsFixed(2) ?? ''}',
+                                                    'SRP: ${productSrp?.toStringAsFixed(2) ?? ''}',
+                                                    'Custom'
+                                                  ].map((String option) {
+                                                    return DropdownMenuItem<
+                                                        String>(
+                                                      value: option,
+                                                      child: Text(option),
+                                                    );
+                                                  }).toList(),
+                                                  onChanged: (value) {
+                                                    setState(() {
+                                                      selectedLine2Option =
+                                                          value;
+                                                      if (value == 'Custom') {
+                                                        _line2Controller
+                                                            .clear(); // Clear the controller for custom input
+                                                      }
+                                                    });
+                                                  },
+                                                ),
                                               ),
                                             ],
                                           ),
+                                          // Custom input field for Line 2
+                                          if (selectedLine2Option == 'Custom')
+                                            SizedBox(height: 16),
+                                          if (selectedLine2Option == 'Custom')
+                                            TextField(
+                                              controller: _line2Controller,
+                                              decoration: InputDecoration(
+                                                labelText:
+                                                    'Enter Custom Line 2',
+                                                labelStyle: TextStyle(
+                                                    fontFamily: 'Poppins'),
+                                                border: OutlineInputBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(15),
+                                                  borderSide: BorderSide(
+                                                      color:
+                                                          Colors.grey.shade300),
+                                                ),
+                                              ),
+                                            ),
                                           SizedBox(height: 16),
                                           Row(
                                             children: [
@@ -1008,7 +1143,6 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
                                               ),
                                               SizedBox(width: 16),
                                               Expanded(
-                                                // add barcode button
                                                 child: GradientButton(
                                                   text: "Add Barcode",
                                                   onPressed: () {
@@ -1029,8 +1163,7 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
                               Expanded(
                                 child: Card(
                                   elevation: 1,
-                                  color: Colors
-                                      .white, // Set background color to white
+                                  color: Colors.white,
                                   child: Padding(
                                     padding: EdgeInsets.all(24),
                                     child: Center(
@@ -1514,11 +1647,9 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
                                                                 child: Text(
                                                                   barcode[
                                                                       'product_name'],
-                                                                  style:
-                                                                      const TextStyle(
-                                                                    fontFamily:
-                                                                        'Poppins',
-                                                                  ),
+                                                                  style: const TextStyle(
+                                                                      fontFamily:
+                                                                          'Poppins'),
                                                                   textAlign:
                                                                       TextAlign
                                                                           .center,
@@ -1660,10 +1791,9 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
                                 // Editable page number in a box
                                 Row(
                                   children: [
-                                    const Text(
-                                      'Page ',
-                                      style: TextStyle(fontFamily: 'Poppins'),
-                                    ),
+                                    const Text('Page ',
+                                        style:
+                                            TextStyle(fontFamily: 'Poppins')),
                                     Container(
                                       decoration: BoxDecoration(
                                         border: Border.all(
@@ -1722,10 +1852,9 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
                                       ),
                                     ),
                                     Text(
-                                      ' of ${(_filteredBarcodes.length / _itemsPerPage).ceil()}',
-                                      style: const TextStyle(
-                                          fontFamily: 'Poppins'),
-                                    ),
+                                        ' of ${(_filteredBarcodes.length / _itemsPerPage).ceil()}',
+                                        style: const TextStyle(
+                                            fontFamily: 'Poppins')),
                                   ],
                                 ),
                                 IconButton(

@@ -33,6 +33,7 @@ class _ProductBatchWidgetState extends State<ProductBatchWidget> {
   String _selectedSortOption = 'Default'; // Track selected sorting option
   bool _isLoading = true; // Loading state
   int? _selectedProductId; // Track selected product ID
+  Map<int, int> _productBatchCount = {}; // Track batch count for each product
 
   @override
   void initState() {
@@ -69,6 +70,7 @@ class _ProductBatchWidgetState extends State<ProductBatchWidget> {
       setState(() {
         _productBatches = productBatches;
         _filteredProductBatches = productBatches;
+        _updateProductBatchCount(); // Update batch count for each product
       });
     } catch (e) {
       print('Failed to fetch product batches: $e');
@@ -88,6 +90,18 @@ class _ProductBatchWidgetState extends State<ProductBatchWidget> {
       });
     } catch (e) {
       print('Failed to fetch products: $e');
+    }
+  }
+
+  void _updateProductBatchCount() {
+    _productBatchCount.clear();
+    for (var batch in _productBatches) {
+      int productId = batch['p_id'];
+      if (_productBatchCount.containsKey(productId)) {
+        _productBatchCount[productId] = _productBatchCount[productId]! + 1;
+      } else {
+        _productBatchCount[productId] = 1;
+      }
     }
   }
 
@@ -148,6 +162,16 @@ class _ProductBatchWidgetState extends State<ProductBatchWidget> {
                       setState(() {
                         _selectedProductId =
                             value; // Update selected product ID
+                        if (_selectedProductId != null) {
+                          // Generate batch name
+                          String productName = _products.firstWhere((product) =>
+                              product['product_id'] ==
+                              _selectedProductId)['product_name'];
+                          int batchCount =
+                              _productBatchCount[_selectedProductId] ?? 0;
+                          nameController.text =
+                              '$productName${(batchCount + 1).toString().padLeft(3, '0')}';
+                        }
                       });
                     },
                     validator: (value) =>
@@ -169,7 +193,7 @@ class _ProductBatchWidgetState extends State<ProductBatchWidget> {
                   TextField(
                     controller: mfgController,
                     decoration: InputDecoration(
-                      labelText: 'Manufacturing Date (YYYY-MM-DD)',
+                      labelText: 'Manufacturing Date (DD-MM-YYYY)',
                       labelStyle: TextStyle(fontFamily: 'Poppins'),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(15),
@@ -181,7 +205,7 @@ class _ProductBatchWidgetState extends State<ProductBatchWidget> {
                   TextField(
                     controller: expController,
                     decoration: InputDecoration(
-                      labelText: 'Expiry Date (YYYY-MM-DD)',
+                      labelText: 'Expiry Date (DD-MM-YYYY)',
                       labelStyle: TextStyle(fontFamily: 'Poppins'),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(15),
@@ -221,6 +245,7 @@ class _ProductBatchWidgetState extends State<ProductBatchWidget> {
                   setState(() {
                     _productBatches.add(newBatch);
                     _filteredProductBatches = _productBatches;
+                    _updateProductBatchCount(); // Update batch count
                   });
                   _fetchProductBatches();
                   Navigator.of(context).pop();
@@ -314,7 +339,7 @@ class _ProductBatchWidgetState extends State<ProductBatchWidget> {
                   TextField(
                     controller: mfgController,
                     decoration: InputDecoration(
-                      labelText: 'Manufacturing Date (YYYY-MM-DD)',
+                      labelText: 'Manufacturing Date (DD-MM-YYYY)',
                       labelStyle: TextStyle(fontFamily: 'Poppins'),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(15),
@@ -326,7 +351,7 @@ class _ProductBatchWidgetState extends State<ProductBatchWidget> {
                   TextField(
                     controller: expController,
                     decoration: InputDecoration(
-                      labelText: 'Expiry Date (YYYY-MM-DD)',
+                      labelText: 'Expiry Date (DD-MM-YYYY)',
                       labelStyle: TextStyle(fontFamily: 'Poppins'),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(15),
@@ -436,6 +461,7 @@ class _ProductBatchWidgetState extends State<ProductBatchWidget> {
         setState(() {
           _productBatches.removeWhere((b) => b['p_batch_id'] == batchId);
           _filteredProductBatches = _productBatches;
+          _updateProductBatchCount(); // Update batch count
         });
       } catch (e) {
         print('Failed to delete product batch: $e');

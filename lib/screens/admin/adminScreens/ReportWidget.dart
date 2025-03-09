@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../custom/SidebarHeader.dart'; // Ensure this path is correct
 import '../../../custom/AdminSidebar.dart'; // Ensure this path is correct
 import '../../../services/ApiService.dart'; // Ensure this path is correct
+import 'package:intl/intl.dart';
 
 class ReportWidget extends StatefulWidget {
   const ReportWidget({Key? key}) : super(key: key);
@@ -57,6 +58,8 @@ class _ReportWidgetState extends State<ReportWidget> {
 
   List<FlSpot> _prepareGraphData() {
     final Map<int, double> dataPoints = {};
+    final apiDateFormat =
+        DateFormat('dd-MM-yyyy HH:mm:ss'); // Format for parsing API date
 
     // Determine the current date and time
     final now = DateTime.now();
@@ -74,8 +77,6 @@ class _ReportWidgetState extends State<ReportWidget> {
         dataPointCount = now.day; // Show from 1 to current day of the month
         break;
       case 'quarterly':
-        dataPointCount = now.month; // Show from January to current month
-        break;
       case 'yearly':
         dataPointCount = now.month; // Show from January to current month
         break;
@@ -90,7 +91,7 @@ class _ReportWidgetState extends State<ReportWidget> {
 
     // Populate data points based on transactions
     for (var transaction in _transactions) {
-      final DateTime date = DateTime.parse(transaction['created_at']);
+      final DateTime date = apiDateFormat.parse(transaction['created_at']);
       int index;
 
       switch (_timeRange) {
@@ -167,7 +168,6 @@ class _ReportWidgetState extends State<ReportWidget> {
     }
   }
 
-  @override
   @override
   Widget build(BuildContext context) {
     final graphData = _prepareGraphData();

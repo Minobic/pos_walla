@@ -99,8 +99,20 @@ class _InventoryWidgetState extends State<InventoryWidget> {
     }
   }
 
+  // Modify the _getBatchesForProduct method to exclude used batches
   List<dynamic> _getBatchesForProduct(int productId) {
-    return _allBatches.where((batch) => batch['p_id'] == productId).toList();
+    // Get all batches for the product
+    List<dynamic> allBatches =
+        _allBatches.where((batch) => batch['p_id'] == productId).toList();
+
+    // Get the batch IDs that are already in use by any inventory
+    Set usedBatchIds =
+        _inventories.map((inventory) => inventory['p_batch_id']).toSet();
+
+    // Filter out the used batches
+    return allBatches
+        .where((batch) => !usedBatchIds.contains(batch['p_batch_id']))
+        .toList();
   }
 
   String? _getBatchExpiry(int batchId) {
@@ -124,199 +136,209 @@ class _InventoryWidgetState extends State<InventoryWidget> {
     }
   }
 
-  void _showAddInventoryDialog() {
-    final TextEditingController quantityController = TextEditingController();
+  void _showAddInventoryDialog() async {
+    // Fetch products and batches before showing the dialog
+    final products = await ApiService.fetchProducts();
+    final batches = await ApiService.fetchProductBatches();
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          backgroundColor: Colors.white,
-          title: Container(
-            alignment: Alignment.center,
-            child: const Text(
-              'Add New Inventory',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
+        // Initialize state variables within the dialog
+        int? selectedProductId;
+        int? selectedBatchId;
+        String? selectedStockLevel;
+        final TextEditingController quantityController =
+            TextEditingController();
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
               ),
-            ),
-          ),
-          content: Container(
-            width: 400,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Dropdown for product selection
-                  DropdownButtonFormField<int>(
-                    value: _selectedProductId,
-                    decoration: InputDecoration(
-                      labelText: 'Select Product',
-                      labelStyle: TextStyle(fontFamily: 'Poppins'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                    ),
-                    items: _products.map((product) {
-                      return DropdownMenuItem<int>(
-                        value: product['product_id'],
-                        child: Text(product['product_name']),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedProductId = value;
-                        _selectedBatchId = null; // Reset batch selection
-                        _selectedStockLevel =
-                            null; // Reset stock level selection
-                        Future.delayed(Duration(milliseconds: 500), () {
-                          Navigator.of(context).pop();
-                          _showAddInventoryDialog();
-                        });
-                      });
-                    },
-                    validator: (value) =>
-                        value == null ? 'Please select a product' : null,
+              backgroundColor: Colors.white,
+              title: Container(
+                alignment: Alignment.center,
+                child: const Text(
+                  'Add New Inventory',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
                   ),
-                  const SizedBox(height: 12),
-                  // Conditionally render batch selection dropdown
-                  if (_selectedProductId != null)
-                    DropdownButtonFormField<int>(
-                      value: _selectedBatchId,
-                      decoration: InputDecoration(
-                        labelText: 'Select Batch',
-                        labelStyle: TextStyle(fontFamily: 'Poppins'),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                      ),
-                      items: _getBatchesForProduct(_selectedProductId!)
-                          .map((batch) {
-                        return DropdownMenuItem<int>(
-                          value: batch['p_batch_id'],
-                          child: Text(batch['p_batch_name']),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedBatchId = value;
-                          Future.delayed(Duration(milliseconds: 500), () {
-                            Navigator.of(context).pop();
-                            _showAddInventoryDialog();
-                          });
-                        });
-                      },
-                      validator: (value) =>
-                          value == null ? 'Please select a batch' : null,
-                    ),
-                  const SizedBox(height: 12),
-                  // Conditionally render remaining fields after batch selection
-                  if (_selectedBatchId != null) ...[
-                    // Read-only field for batch expiry date
-                    TextField(
-                      readOnly: true,
-                      decoration: InputDecoration(
-                        labelText: 'Batch Expiry Date',
-                        labelStyle: TextStyle(fontFamily: 'Poppins'),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                      ),
-                      controller: TextEditingController(
-                        text: _getBatchExpiry(_selectedBatchId!) ?? '',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Dropdown for stock level selection
-                    DropdownButtonFormField<String>(
-                      value: _selectedStockLevel,
-                      decoration: InputDecoration(
-                        labelText: 'Select Stock Level',
-                        labelStyle: TextStyle(fontFamily: 'Poppins'),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                      ),
-                      items: ['high', 'medium', 'low'].map((level) {
-                        return DropdownMenuItem<String>(
-                          value: level,
-                          child: Text(level),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedStockLevel = value;
-                        });
-                      },
-                      validator: (value) =>
-                          value == null ? 'Please select a stock level' : null,
-                    ),
-                    const SizedBox(height: 12),
-                    // Quantity input field
-                    TextField(
-                      controller: quantityController,
-                      decoration: InputDecoration(
-                        labelText: 'Quantity',
-                        labelStyle: TextStyle(fontFamily: 'Poppins'),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                      ),
-                      keyboardType: TextInputType.number,
-                    ),
-                  ],
-                ],
+                ),
               ),
-            ),
-          ),
-          actions: [
-            RedButton(
-              text: 'Cancel',
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-              width: 150,
-            ),
-            GradientButton(
-              text: 'Add',
-              onPressed: () async {
-                if (_selectedProductId == null ||
-                    _selectedBatchId == null ||
-                    _selectedStockLevel == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Please fill all fields')),
-                  );
-                  return;
-                }
-                try {
-                  final newInventory = await ApiService.addInventory(
-                    productId: _selectedProductId!,
-                    batchId: _selectedBatchId!,
-                    stockLevel: _selectedStockLevel!,
-                    quantity: int.parse(quantityController.text),
-                  );
-                  setState(() {
-                    _inventories.add(newInventory);
-                  });
-                  _fetchInventories();
-                  Navigator.of(context).pop();
-                } catch (e) {
-                  print('Failed to add inventory: $e');
-                }
-              },
-              width: 150,
-            ),
-          ],
+              content: Container(
+                width: 400,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Dropdown for product selection
+                      DropdownButtonFormField<int>(
+                        value: selectedProductId,
+                        decoration: InputDecoration(
+                          labelText: 'Select Product',
+                          labelStyle: TextStyle(fontFamily: 'Poppins'),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                        ),
+                        items: products.map((product) {
+                          return DropdownMenuItem<int>(
+                            value: product['product_id'],
+                            child: Text(product['product_name']),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            selectedProductId = value;
+                            selectedBatchId = null; // Reset batch selection
+                            selectedStockLevel =
+                                null; // Reset stock level selection
+                          });
+                        },
+                        validator: (value) =>
+                            value == null ? 'Please select a product' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      // Conditionally render batch selection dropdown
+                      if (selectedProductId != null)
+                        DropdownButtonFormField<int>(
+                          value: selectedBatchId,
+                          decoration: InputDecoration(
+                            labelText: 'Select Batch',
+                            labelStyle: TextStyle(fontFamily: 'Poppins'),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade300),
+                            ),
+                          ),
+                          items: _getBatchesForProduct(selectedProductId!)
+                              .map((batch) {
+                            return DropdownMenuItem<int>(
+                              value: batch['p_batch_id'],
+                              child: Text(batch['p_batch_name']),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedBatchId = value;
+                            });
+                          },
+                          validator: (value) =>
+                              value == null ? 'Please select a batch' : null,
+                        ),
+                      const SizedBox(height: 12),
+                      // Conditionally render remaining fields after batch selection
+                      if (selectedBatchId != null) ...[
+                        // Read-only field for batch expiry date
+                        TextField(
+                          readOnly: true,
+                          decoration: InputDecoration(
+                            labelText: 'Batch Expiry Date',
+                            labelStyle: TextStyle(fontFamily: 'Poppins'),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade300),
+                            ),
+                          ),
+                          controller: TextEditingController(
+                            text: _getBatchExpiry(selectedBatchId!) ?? '',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Dropdown for stock level selection
+                        DropdownButtonFormField<String>(
+                          value: selectedStockLevel,
+                          decoration: InputDecoration(
+                            labelText: 'Select Stock Level',
+                            labelStyle: TextStyle(fontFamily: 'Poppins'),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade300),
+                            ),
+                          ),
+                          items: ['high', 'medium', 'low'].map((level) {
+                            return DropdownMenuItem<String>(
+                              value: level,
+                              child: Text(level),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedStockLevel = value;
+                            });
+                          },
+                          validator: (value) => value == null
+                              ? 'Please select a stock level'
+                              : null,
+                        ),
+                        const SizedBox(height: 12),
+                        // Quantity input field
+                        TextField(
+                          controller: quantityController,
+                          decoration: InputDecoration(
+                            labelText: 'Quantity',
+                            labelStyle: TextStyle(fontFamily: 'Poppins'),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(15),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade300),
+                            ),
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                RedButton(
+                  text: 'Cancel',
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close the dialog
+                  },
+                  width: 150,
+                ),
+                GradientButton(
+                  text: 'Add',
+                  onPressed: () async {
+                    if (selectedProductId == null ||
+                        selectedBatchId == null ||
+                        selectedStockLevel == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Please fill all fields')),
+                      );
+                      return;
+                    }
+                    try {
+                      final newInventory = await ApiService.addInventory(
+                        productId: selectedProductId!,
+                        batchId: selectedBatchId!,
+                        stockLevel: selectedStockLevel!,
+                        quantity: int.parse(quantityController.text),
+                      );
+                      setState(() {
+                        _inventories.add(newInventory);
+                      });
+                      _fetchInventories();
+                      Navigator.of(context).pop();
+                    } catch (e) {
+                      print('Failed to add inventory: $e');
+                    }
+                  },
+                  width: 150,
+                ),
+              ],
+            );
+          },
         );
       },
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../custom/SidebarHeader.dart';
 import '../../../custom/AdminSidebar.dart';
 import '../../../services/ApiService.dart'; // Import your ApiService
+import 'package:intl/intl.dart';
 
 class CustomerWidget extends StatefulWidget {
   const CustomerWidget({Key? key}) : super(key: key);
@@ -73,6 +74,11 @@ class _CustomerWidgetState extends State<CustomerWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final dateFormat = DateFormat('dd-MM-yyyy');
+    final timeFormat = DateFormat('HH:mm');
+    final apiDateFormat =
+        DateFormat('dd-MM-yyyy HH:mm:ss'); // Format for parsing API date
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Row(
@@ -441,6 +447,9 @@ class _CustomerWidgetState extends State<CustomerWidget> {
                                                         final transaction =
                                                             _transactions[
                                                                 index];
+                                                        final date = apiDateFormat
+                                                            .parse(transaction[
+                                                                'created_at']);
                                                         return Container(
                                                           padding:
                                                               const EdgeInsets
@@ -471,13 +480,9 @@ class _CustomerWidgetState extends State<CustomerWidget> {
                                                                           .start,
                                                                   children: [
                                                                     Text(
-                                                                      transaction['created_at'] !=
-                                                                              null
-                                                                          ? DateTime.parse(transaction['created_at'])
-                                                                              .toLocal()
-                                                                              .toString()
-                                                                              .split(' ')[0] // Format date
-                                                                          : 'N/A',
+                                                                      dateFormat
+                                                                          .format(
+                                                                              date),
                                                                       style:
                                                                           const TextStyle(
                                                                         fontWeight:
@@ -485,13 +490,9 @@ class _CustomerWidgetState extends State<CustomerWidget> {
                                                                       ),
                                                                     ),
                                                                     Text(
-                                                                      transaction['created_at'] !=
-                                                                              null
-                                                                          ? DateTime.parse(transaction['created_at'])
-                                                                              .toLocal()
-                                                                              .toString()
-                                                                              .split(' ')[1] // Format time
-                                                                          : 'N/A',
+                                                                      timeFormat
+                                                                          .format(
+                                                                              date),
                                                                       style:
                                                                           TextStyle(
                                                                         color: Colors
