@@ -230,6 +230,7 @@ class _CustomerWidgetState extends State<CustomerWidget> {
                                           const Text('Sort by'),
                                           const SizedBox(width: 5),
                                           DropdownButton<String>(
+                                            dropdownColor: Colors.white,
                                             value: _sortBy,
                                             icon: const Icon(
                                                 Icons.arrow_drop_down),

@@ -241,6 +241,7 @@ class _ReportWidgetState extends State<ReportWidget> {
                                           const Text('Sort by'),
                                           const SizedBox(width: 5),
                                           DropdownButton<String>(
+                                            dropdownColor: Colors.white,
                                             value: _timeRange,
                                             icon: const Icon(
                                                 Icons.arrow_drop_down),
@@ -386,11 +387,27 @@ class _ReportWidgetState extends State<ReportWidget> {
                                     ),
                                   ),
                                   const SizedBox(height: 20),
-                                  _buildLegendItem('Cash', Colors.blue,
-                                      '${cashPercentage.toStringAsFixed(1)}%'),
-                                  const SizedBox(height: 10),
-                                  _buildLegendItem('Online', Colors.green,
-                                      '${onlinePercentage.toStringAsFixed(1)}%'),
+                                  Card(
+                                    elevation: 2,
+                                    color: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(15),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(20),
+                                      child: Column(
+                                        children: [
+                                          _buildLegendItem('Cash', Colors.blue,
+                                              '${cashPercentage.toStringAsFixed(1)}%'),
+                                          const SizedBox(height: 20),
+                                          _buildLegendItem(
+                                              'Online',
+                                              Colors.green,
+                                              '${onlinePercentage.toStringAsFixed(1)}%'),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -423,6 +440,8 @@ class _ReportWidgetState extends State<ReportWidget> {
         Text(
           label,
           style: const TextStyle(
+            fontSize: 25,
+            fontFamily: 'poppins',
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -430,6 +449,8 @@ class _ReportWidgetState extends State<ReportWidget> {
         Text(
           percentage,
           style: const TextStyle(
+            fontSize: 20,
+            fontFamily: 'poppins',
             color: Colors.grey,
           ),
         ),

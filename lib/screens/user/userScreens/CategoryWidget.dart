@@ -455,6 +455,7 @@ class _CategoryWidgetState extends State<CategoryWidget> {
                                       width: MediaQuery.of(context).size.width *
                                           0.29,
                                       child: PopupMenuButton<String>(
+                                        color: Colors.white,
                                         icon: Row(
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,

@@ -173,6 +173,7 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
   Widget _buildDropdown(
       String? value, List<String> items, ValueChanged<String?> onChanged) {
     return DropdownButtonFormField<String>(
+      dropdownColor: Colors.white,
       value: value,
       decoration: InputDecoration(
         border: OutlineInputBorder(
@@ -939,6 +940,7 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
                                               Expanded(
                                                 child: DropdownButtonFormField<
                                                     int>(
+                                                  dropdownColor: Colors.white,
                                                   value: _selectedProductId,
                                                   decoration: InputDecoration(
                                                     labelText: 'Product name',
@@ -1001,6 +1003,7 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
                                               Expanded(
                                                 child: DropdownButtonFormField<
                                                     String>(
+                                                  dropdownColor: Colors.white,
                                                   value: selectedLine1Option,
                                                   decoration: InputDecoration(
                                                     labelText: 'Line 1',
@@ -1072,6 +1075,7 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
                                               Expanded(
                                                 child: DropdownButtonFormField<
                                                     String>(
+                                                  dropdownColor: Colors.white,
                                                   value: selectedLine2Option,
                                                   decoration: InputDecoration(
                                                     labelText: 'Line 2',
@@ -1408,6 +1412,7 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
                                                     .width *
                                                 0.29,
                                             child: PopupMenuButton<String>(
+                                              color: Colors.white,
                                               icon: Row(
                                                 mainAxisAlignment:
                                                     MainAxisAlignment.center,

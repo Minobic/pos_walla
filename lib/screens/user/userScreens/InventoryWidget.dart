@@ -724,6 +724,7 @@ class _InventoryWidgetState extends State<InventoryWidget> {
                                       width: MediaQuery.of(context).size.width *
                                           0.29,
                                       child: PopupMenuButton<String>(
+                                        color: Colors.white,
                                         icon: Row(
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,

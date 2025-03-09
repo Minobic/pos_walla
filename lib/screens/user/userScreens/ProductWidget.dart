@@ -631,6 +631,7 @@ class _ProductWidgetState extends State<ProductWidget> {
                                       width: MediaQuery.of(context).size.width *
                                           0.29, // Set width to 40% of screen width
                                       child: PopupMenuButton<String>(
+                                        color: Colors.white,
                                         icon: Row(
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,

@@ -94,7 +94,7 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
                   Expanded(
                     child: Container(
                       color: Colors.white,
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(25),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -112,7 +112,7 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
                                       Expanded(
                                         child: Container(
                                           margin: const EdgeInsets.only(
-                                              right: 10, bottom: 10),
+                                              right: 10, bottom: 20),
                                           decoration: BoxDecoration(
                                             color: Colors.white,
                                             borderRadius:
@@ -120,7 +120,7 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
                                             border: Border.all(
                                                 color: Colors.grey.shade300),
                                           ),
-                                          padding: const EdgeInsets.all(15),
+                                          padding: const EdgeInsets.all(30),
                                           child: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
@@ -133,7 +133,7 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
                                                   fontFamily: 'Poppins',
                                                 ),
                                               ),
-                                              const SizedBox(height: 15),
+                                              const SizedBox(height: 30),
                                               Expanded(
                                                 child: SingleChildScrollView(
                                                   child: Column(
@@ -170,6 +170,7 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
                                           ),
                                         ),
                                       ),
+
                                       // Report Section
                                       Container(
                                         height: 80,
@@ -182,7 +183,7 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
                                           border: Border.all(
                                               color: Colors.grey.shade300),
                                         ),
-                                        padding: const EdgeInsets.all(15),
+                                        padding: const EdgeInsets.all(20),
                                         child: Row(
                                           mainAxisAlignment:
                                               MainAxisAlignment.spaceBetween,
@@ -219,6 +220,8 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
                                   ),
                                 ),
 
+                                Padding(
+                                    padding: const EdgeInsets.only(right: 10)),
                                 // Second Column: Employee and Customer
                                 Expanded(
                                   flex: 2,
@@ -229,7 +232,7 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
                                         flex: 2,
                                         child: Container(
                                           margin:
-                                              const EdgeInsets.only(bottom: 10),
+                                              const EdgeInsets.only(bottom: 20),
                                           decoration: const BoxDecoration(
                                             gradient: LinearGradient(
                                               colors: [
@@ -243,7 +246,7 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
                                               Radius.circular(10),
                                             ),
                                           ),
-                                          padding: const EdgeInsets.all(15),
+                                          padding: const EdgeInsets.all(25),
                                           child: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
@@ -257,7 +260,7 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
                                                   fontFamily: 'Poppins',
                                                 ),
                                               ),
-                                              const SizedBox(height: 15),
+                                              const SizedBox(height: 20),
                                               Expanded(
                                                 child: _isLoading
                                                     ? const Center(
@@ -295,7 +298,7 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
                                             border: Border.all(
                                                 color: Colors.grey.shade300),
                                           ),
-                                          padding: const EdgeInsets.all(15),
+                                          padding: const EdgeInsets.all(25),
                                           child: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
@@ -308,7 +311,7 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
                                                   fontFamily: 'Poppins',
                                                 ),
                                               ),
-                                              const SizedBox(height: 15),
+                                              const SizedBox(height: 20),
                                               Expanded(
                                                 child: SingleChildScrollView(
                                                   child: Column(
@@ -353,7 +356,7 @@ class _AdminDashboardWidgetState extends State<AdminDashboardWidget> {
     return GestureDetector(
       onTap: () => onPressed(title.toLowerCase()),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
+        margin: const EdgeInsets.only(bottom: 25),
         child: Row(
           children: [
             Container(
