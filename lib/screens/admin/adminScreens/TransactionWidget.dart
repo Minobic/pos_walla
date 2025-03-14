@@ -3,12 +3,15 @@ import '../../../custom/SidebarHeader.dart';
 import '../../../custom/AdminSidebar.dart';
 import '../../../custom/AdminGradientButton.dart'; // Adjust the import path as necessary
 import '../../../services/ApiService.dart';
+import 'package:printing/printing.dart'; // Add this import
+import 'package:pdf/pdf.dart'; // Add this import
+import 'package:pdf/widgets.dart' as pw; // Add this import
+import 'dart:typed_data'; // Add this import for Uint8List
 
 class TransactionWidget extends StatefulWidget {
-  final String selectedPeriod;
+  String selectedPeriod;
 
-  const TransactionWidget({Key? key, required this.selectedPeriod})
-      : super(key: key);
+  TransactionWidget({Key? key, required this.selectedPeriod}) : super(key: key);
 
   @override
   State<TransactionWidget> createState() => _TransactionWidgetState();
@@ -21,6 +24,7 @@ class _TransactionWidgetState extends State<TransactionWidget> {
   List<dynamic> _transactions = [];
   double _cashTotal = 0.0;
   double _onlineTotal = 0.0;
+  String _title = "Today's Transaction"; // Add this line
 
   @override
   void initState() {
@@ -46,7 +50,7 @@ class _TransactionWidgetState extends State<TransactionWidget> {
     _onlineTotal = 0.0;
 
     for (var transaction in transactions) {
-      if (transaction['payment_method'] == 'cash') {
+      if (transaction['payment_method'] == 'Cash') {
         _cashTotal += transaction['total_amount'];
       } else {
         _onlineTotal += transaction['total_amount'];
@@ -58,6 +62,72 @@ class _TransactionWidgetState extends State<TransactionWidget> {
     setState(() {
       _isSidebarOpen = !_isSidebarOpen;
     });
+  }
+
+  void _updatePeriod(String period) {
+    setState(() {
+      widget.selectedPeriod = period;
+      _fetchTransactions();
+      // Update the title based on the selected period
+      switch (period) {
+        case 'daily':
+          _title = "Today's Transaction";
+          break;
+        case 'weekly':
+          _title = "This Week's Transactions";
+          break;
+        case 'monthly':
+          _title = "This Month's Transactions";
+          break;
+        case 'quarterly':
+          _title = "This Quarter's Transactions";
+          break;
+        case 'yearly':
+          _title = "This Year's Transactions";
+          break;
+        case 'custom':
+          _title = "Custom Period Transactions";
+          break;
+        default:
+          _title = "Transactions";
+      }
+    });
+  }
+
+  Future<void> _printTransactions() async {
+    final doc = pw.Document();
+
+    doc.addPage(
+      pw.Page(
+        build: (pw.Context context) {
+          return pw.Center(
+            child: pw.Column(
+              children: [
+                pw.Text(_title,
+                    style: pw.TextStyle(
+                        fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                pw.SizedBox(height: 20),
+                pw.Table.fromTextArray(
+                  context: context,
+                  data: <List<String>>[
+                    <String>['Customer', 'Date', 'Amount', 'Type'],
+                    ..._transactions.map((transaction) => [
+                          transaction['customer_name'],
+                          transaction['created_at'],
+                          'Rs. ${transaction['total_amount']}',
+                          transaction['payment_method'],
+                        ])
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+
+    final bytes = await doc.save();
+    await Printing.layoutPdf(onLayout: (PdfPageFormat format) => bytes);
   }
 
   @override
@@ -97,7 +167,7 @@ class _TransactionWidgetState extends State<TransactionWidget> {
                               borderRadius: BorderRadius.circular(15),
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.all(20),
+                              padding: const EdgeInsets.all(30),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -105,10 +175,10 @@ class _TransactionWidgetState extends State<TransactionWidget> {
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text(
-                                        "Today's Transaction",
-                                        style: TextStyle(
-                                          fontSize: 18,
+                                      Text(
+                                        _title, // Use the state variable here
+                                        style: const TextStyle(
+                                          fontSize: 20,
                                           fontWeight: FontWeight.bold,
                                           fontFamily: 'Poppins',
                                         ),
@@ -202,7 +272,7 @@ class _TransactionWidgetState extends State<TransactionWidget> {
                                   const SizedBox(height: 20),
                                   Expanded(
                                     child: Container(
-                                      padding: const EdgeInsets.all(50),
+                                      padding: const EdgeInsets.all(30),
                                       decoration: BoxDecoration(
                                         gradient: LinearGradient(
                                           colors: [
@@ -222,11 +292,11 @@ class _TransactionWidgetState extends State<TransactionWidget> {
                                             'Total Balance',
                                             style: TextStyle(
                                               color: Colors.white,
-                                              fontSize: 16,
+                                              fontSize: 25,
                                               fontFamily: 'Poppins',
                                             ),
                                           ),
-                                          const SizedBox(height: 10),
+                                          const SizedBox(height: 15),
                                           Row(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.baseline,
@@ -237,7 +307,7 @@ class _TransactionWidgetState extends State<TransactionWidget> {
                                                 '₹ ${_cashTotal + _onlineTotal}',
                                                 style: TextStyle(
                                                   color: Colors.white,
-                                                  fontSize: 40,
+                                                  fontSize: 50,
                                                   fontWeight: FontWeight.bold,
                                                   fontFamily: 'Poppins',
                                                 ),
@@ -247,6 +317,114 @@ class _TransactionWidgetState extends State<TransactionWidget> {
                                         ],
                                       ),
                                     ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  Column(
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.blue,
+                                              ),
+                                              onPressed: () =>
+                                                  _updatePeriod('daily'),
+                                              child: Text(
+                                                'Daily',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.blue,
+                                              ),
+                                              onPressed: () =>
+                                                  _updatePeriod('weekly'),
+                                              child: Text(
+                                                'Weekly',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.blue,
+                                              ),
+                                              onPressed: () =>
+                                                  _updatePeriod('monthly'),
+                                              child: Text(
+                                                'Monthly',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.blue,
+                                              ),
+                                              onPressed: () =>
+                                                  _updatePeriod('quarterly'),
+                                              child: Text(
+                                                'Quarterly',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.blue,
+                                              ),
+                                              onPressed: () =>
+                                                  _updatePeriod('yearly'),
+                                              child: Text(
+                                                'Yearly',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.blue,
+                                              ),
+                                              onPressed: () =>
+                                                  _updatePeriod('custom'),
+                                              child: Text(
+                                                'Custom',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
@@ -265,7 +443,7 @@ class _TransactionWidgetState extends State<TransactionWidget> {
                               borderRadius: BorderRadius.circular(15),
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.all(20),
+                              padding: const EdgeInsets.all(30),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -276,7 +454,7 @@ class _TransactionWidgetState extends State<TransactionWidget> {
                                       const Text(
                                         'Transaction',
                                         style: TextStyle(
-                                          fontSize: 18,
+                                          fontSize: 20,
                                           fontWeight: FontWeight.bold,
                                           fontFamily: 'Poppins',
                                         ),
@@ -326,7 +504,8 @@ class _TransactionWidgetState extends State<TransactionWidget> {
                                       AdminGradientButton(
                                         text: 'Print',
                                         icon: Icons.print,
-                                        onPressed: () {},
+                                        onPressed:
+                                            _printTransactions, // Set the onPressed callback to _printTransactions
                                       ),
                                       const SizedBox(width: 10),
                                       AdminGradientButton(
@@ -347,7 +526,6 @@ class _TransactionWidgetState extends State<TransactionWidget> {
                                     child: const Row(
                                       children: [
                                         Expanded(
-                                          flex: 2,
                                           child: Text(
                                             'Customer',
                                             style: TextStyle(
@@ -369,9 +547,18 @@ class _TransactionWidgetState extends State<TransactionWidget> {
                                           ),
                                         ),
                                         Expanded(
-                                          flex: 1,
                                           child: Text(
                                             'Amount',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontFamily: 'Poppins',
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            'Type',
                                             style: TextStyle(
                                               color: Colors.white,
                                               fontWeight: FontWeight.bold,
@@ -403,7 +590,6 @@ class _TransactionWidgetState extends State<TransactionWidget> {
                                           child: Row(
                                             children: [
                                               Expanded(
-                                                flex: 2,
                                                 child: Text(
                                                   transaction['customer_name'],
                                                   style: const TextStyle(
@@ -414,49 +600,31 @@ class _TransactionWidgetState extends State<TransactionWidget> {
                                               ),
                                               Expanded(
                                                 flex: 2,
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      transaction['created_at'],
-                                                      style: const TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontFamily: 'Poppins',
-                                                      ),
-                                                    ),
-                                                  ],
+                                                child: Text(
+                                                  transaction['created_at'],
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontFamily: 'Poppins',
+                                                  ),
                                                 ),
                                               ),
                                               Expanded(
-                                                flex: 1,
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      '₹ ${transaction['total_amount']}',
-                                                      style: const TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontFamily: 'Poppins',
-                                                      ),
-                                                    ),
-                                                    Text(
-                                                      transaction[
-                                                          'payment_method'],
-                                                      style: TextStyle(
-                                                        color: transaction[
-                                                                    'payment_method'] ==
-                                                                'Online'
-                                                            ? Colors.blue[600]
-                                                            : Colors.grey[600],
-                                                        fontSize: 12,
-                                                        fontFamily: 'Poppins',
-                                                      ),
-                                                    ),
-                                                  ],
+                                                child: Text(
+                                                  '₹ ${transaction['total_amount']}',
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontFamily: 'Poppins',
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                child: Text(
+                                                  transaction['payment_method'],
+                                                  style: const TextStyle(
+                                                    color: Colors.black,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontFamily: 'Poppins',
+                                                  ),
                                                 ),
                                               ),
                                             ],

@@ -89,9 +89,23 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
 
   void _applyPromoCode(String promoCode) async {
     try {
-      final discount = await ApiService.applyPromoCode(promoCode, _subtotal);
+      // Assume the API service returns a map with 'discountType' and 'value'
+      final discountData =
+          await ApiService.applyPromoCode(promoCode, _subtotal);
+      final discountType = discountData['discountType'];
+      final value = discountData['value'];
+
+      double calculatedDiscount;
+      if (discountType == 'percentage') {
+        calculatedDiscount = (_subtotal * value) / 100;
+      } else if (discountType == 'fixed') {
+        calculatedDiscount = value;
+      } else {
+        throw Exception('Invalid discount type');
+      }
+
       setState(() {
-        _discount = discount;
+        _discount = calculatedDiscount;
         _total = _subtotal - _discount + _tax;
       });
     } catch (e) {
@@ -502,6 +516,7 @@ class _CheckoutWidgetState extends State<CheckoutWidget> {
 
                           // Payment Methods
                           DropdownButtonFormField<String>(
+                            dropdownColor: Colors.white,
                             value: _selectedPaymentMethod,
                             decoration: InputDecoration(
                               labelText: 'Select Payment Method',

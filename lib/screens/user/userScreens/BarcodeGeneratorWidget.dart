@@ -11,6 +11,7 @@ import '../../../custom/SidebarHeader.dart'; // Import the reusable components
 import '../../../services/ApiService.dart'; // Import the ApiService
 import '../../../custom/GradientButton.dart'; // Import the GradientButton
 import '../../../custom/RedButton.dart'; // Import the RedButton
+import '../../../custom/CustomDropdown.dart'; // Import the CustomDropdown
 
 class BarcodeGeneratorWidget extends StatefulWidget {
   final String userName;
@@ -938,48 +939,29 @@ class _BarcodeGeneratorWidgetState extends State<BarcodeGeneratorWidget> {
                                             children: [
                                               // In the build method, ensure the DropdownButtonFormField for product selection calls _onProductSelected
                                               Expanded(
-                                                child: DropdownButtonFormField<
-                                                    int>(
-                                                  dropdownColor: Colors.white,
-                                                  value: _selectedProductId,
-                                                  decoration: InputDecoration(
-                                                    labelText: 'Product name',
-                                                    labelStyle: TextStyle(
-                                                        fontFamily: 'Poppins'),
-                                                    border: OutlineInputBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              15),
-                                                      borderSide: BorderSide(
-                                                          color: Colors
-                                                              .grey.shade300),
-                                                    ),
-                                                  ),
-                                                  items:
-                                                      _products.map((product) {
-                                                    return DropdownMenuItem<
-                                                        int>(
-                                                      value:
-                                                          product['product_id'],
-                                                      child: Text(product[
-                                                          'product_name']),
-                                                      onTap: () {
-                                                        _onProductSelected(product[
-                                                            'product_id']); // Call the method to set the product details
-                                                      },
-                                                    );
-                                                  }).toList(),
+                                                child: CustomDropdown<int>(
+                                                  items: _products
+                                                      .map((product) =>
+                                                          product['product_id']
+                                                              as int)
+                                                      .toList(),
+                                                  selectedItem:
+                                                      _selectedProductId,
                                                   onChanged: (value) {
                                                     setState(() {
                                                       _selectedProductId =
                                                           value;
-                                                      _generateBarcode();
+                                                      _generateBarcode(); // Generate barcode when product is selected
                                                     });
+                                                    _onProductSelected(
+                                                        value); // Call the method to set the product details
                                                   },
-                                                  validator: (value) => value ==
-                                                          null
-                                                      ? 'Please select a product'
-                                                      : null,
+                                                  itemAsString: (item) => _products
+                                                      .firstWhere((product) =>
+                                                          product[
+                                                              'product_id'] ==
+                                                          item)['product_name'],
+                                                  label: 'Product name',
                                                 ),
                                               ),
                                               SizedBox(width: 16),

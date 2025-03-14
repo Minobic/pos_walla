@@ -1,3 +1,4 @@
+import 'dart:math'; // Import the math library for the max function
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../custom/SidebarHeader.dart'; // Ensure this path is correct
@@ -48,7 +49,7 @@ class _ReportWidgetState extends State<ReportWidget> {
     _onlineAmount = 0.0;
 
     for (var transaction in _transactions) {
-      if (transaction['payment_method'] == 'cash') {
+      if (transaction['payment_method'] == 'Cash') {
         _cashAmount += transaction['total_amount'];
       } else {
         _onlineAmount += transaction['total_amount'];
@@ -71,7 +72,7 @@ class _ReportWidgetState extends State<ReportWidget> {
         dataPointCount = now.hour + 1; // Show from 0 to current hour
         break;
       case 'weekly':
-        dataPointCount = now.weekday; // Show from Monday to current day
+        dataPointCount = 7; // Show for each day of the week
         break;
       case 'monthly':
         dataPointCount = now.day; // Show from 1 to current day of the month
@@ -105,11 +106,11 @@ class _ReportWidgetState extends State<ReportWidget> {
           }
           break;
         case 'weekly':
-          if (date.isAfter(now.subtract(Duration(days: now.weekday - 1))) &&
+          if (date.isAfter(now.subtract(Duration(days: now.weekday))) &&
               date.isBefore(now.add(Duration(days: 1)))) {
-            index = date.weekday - 1; // Monday is 0, Sunday is 6
-            dataPoints[index] =
-                (dataPoints[index] ?? 0) + transaction['total_amount'];
+            index = date.weekday; // Monday is 1, Sunday is 7
+            dataPoints[index - 1] =
+                (dataPoints[index - 1] ?? 0) + transaction['total_amount'];
           }
           break;
         case 'monthly':
@@ -132,9 +133,47 @@ class _ReportWidgetState extends State<ReportWidget> {
       }
     }
 
+    // Calculate the maximum value in the dataset
+    double maxValue =
+        dataPoints.values.isNotEmpty ? dataPoints.values.reduce(max) : 1.0;
+
+    // Determine an appropriate interval for the Y-axis
+    double yInterval = _calculateInterval(maxValue);
+
+    // Determine an appropriate interval for the X-axis
+    double xInterval = _calculateXInterval(dataPointCount);
+
     return dataPoints.entries
         .map((entry) => FlSpot(entry.key.toDouble(), entry.value))
         .toList();
+  }
+
+  double _calculateInterval(double maxValue) {
+    if (maxValue <= 10) {
+      return 1.0;
+    } else if (maxValue <= 50) {
+      return 5.0;
+    } else if (maxValue <= 100) {
+      return 10.0;
+    } else if (maxValue <= 500) {
+      return 50.0;
+    } else if (maxValue <= 1000) {
+      return 100.0;
+    } else {
+      return 500.0;
+    }
+  }
+
+  double _calculateXInterval(int dataPointCount) {
+    if (dataPointCount <= 7) {
+      return 1.0;
+    } else if (dataPointCount <= 14) {
+      return 2.0;
+    } else if (dataPointCount <= 30) {
+      return 5.0;
+    } else {
+      return 10.0;
+    }
   }
 
   String _getXAxisTitle(double value) {
@@ -143,7 +182,7 @@ class _ReportWidgetState extends State<ReportWidget> {
         return '${value.toInt()}:00'; // Show hours (e.g., 0:00, 1:00, ..., 23:00)
       case 'weekly':
         const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        return days[value.toInt() % days.length];
+        return days[value.toInt()];
       case 'monthly':
         return 'Day ${value.toInt() + 1}'; // Day of the month (1-31)
       case 'quarterly':
@@ -185,6 +224,15 @@ class _ReportWidgetState extends State<ReportWidget> {
     final onlinePercentage = totalAmount > 0
         ? (_onlineAmount / totalAmount) * 100
         : 0.0; // Ensure this is a double
+
+    // Calculate the maximum value in the dataset
+    double maxValue = graphData.map((spot) => spot.y).reduce(max);
+
+    // Determine an appropriate interval for the Y-axis
+    double yInterval = _calculateInterval(maxValue);
+
+    // Determine an appropriate interval for the X-axis
+    double xInterval = _calculateXInterval(graphData.length);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -262,7 +310,7 @@ class _ReportWidgetState extends State<ReportWidget> {
                                                 (String value) {
                                               return DropdownMenuItem<String>(
                                                 value: value,
-                                                child: Text(value),
+                                                child: Text(value.capitalize()),
                                               );
                                             }).toList(),
                                           ),
@@ -279,16 +327,21 @@ class _ReportWidgetState extends State<ReportWidget> {
                                           leftTitles: AxisTitles(
                                             sideTitles: SideTitles(
                                               showTitles: true,
-                                              interval: 10,
+                                              interval: yInterval,
                                               reservedSize: 40,
                                             ),
                                           ),
                                           bottomTitles: AxisTitles(
                                             sideTitles: SideTitles(
                                               showTitles: true,
+                                              interval: xInterval,
                                               getTitlesWidget: (value, meta) {
-                                                return Text(
-                                                    _getXAxisTitle(value));
+                                                // Ensure unique labels
+                                                if (value % xInterval == 0) {
+                                                  return Text(
+                                                      _getXAxisTitle(value));
+                                                }
+                                                return Container();
                                               },
                                               reservedSize: 30,
                                             ),
@@ -360,7 +413,7 @@ class _ReportWidgetState extends State<ReportWidget> {
                                     child: PieChart(
                                       PieChartData(
                                         sectionsSpace: 0,
-                                        centerSpaceRadius: 60,
+                                        centerSpaceRadius: 50,
                                         sections: [
                                           PieChartSectionData(
                                             color: Colors.blue,
@@ -456,5 +509,12 @@ class _ReportWidgetState extends State<ReportWidget> {
         ),
       ],
     );
+  }
+}
+
+extension StringExtension on String {
+  String capitalize() {
+    if (isEmpty) return this;
+    return this[0].toUpperCase() + substring(1);
   }
 }

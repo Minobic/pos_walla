@@ -156,7 +156,7 @@ class _MyAppState extends State<MyApp> {
           case '/transactions':
             return MaterialPageRoute(
                 builder: (context) =>
-                    const TransactionWidget(selectedPeriod: 'daily'));
+                    TransactionWidget(selectedPeriod: 'daily'));
           case '/customers':
             return MaterialPageRoute(
                 builder: (context) => const CustomerWidget());

@@ -4,6 +4,7 @@ import '../../../custom/SidebarHeader.dart'; // Import the reusable components
 import '../../../services/ApiService.dart'; // Import the ApiService
 import '../../../custom/GradientButton.dart'; // Import the GradientButton
 import '../../../custom/RedButton.dart'; // Import the RedButton
+import '../../../custom/CustomDropdown.dart';
 
 class ProductWidget extends StatefulWidget {
   final String userName;
@@ -182,30 +183,20 @@ class _ProductWidgetState extends State<ProductWidget> {
                   ),
                   const SizedBox(height: 12),
                   // Dropdown for category selection
-                  DropdownButtonFormField<int>(
-                    value: _selectedCategoryId,
-                    decoration: InputDecoration(
-                      labelText: 'Select Category',
-                      labelStyle: TextStyle(fontFamily: 'Poppins'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                    ),
-                    items: _categories.map((category) {
-                      return DropdownMenuItem<int>(
-                        value: category['cat_id'],
-                        child: Text(category['cat_name']),
-                      );
-                    }).toList(),
+                  CustomDropdown<dynamic>(
+                    items: _categories,
+                    selectedItem: _selectedCategoryId != null
+                        ? _categories.firstWhere(
+                            (cat) => cat['cat_id'] == _selectedCategoryId)
+                        : null,
                     onChanged: (value) {
                       setState(() {
-                        _selectedCategoryId =
-                            value; // Update selected category ID
+                        _selectedCategoryId = value?['cat_id'];
                       });
                     },
-                    validator: (value) =>
-                        value == null ? 'Please select a category' : null,
+                    itemAsString: (item) =>
+                        item['cat_name'], // Convert category item to string
+                    label: 'Select Category', // Label for the dropdown
                   ),
                 ],
               ),
@@ -348,30 +339,20 @@ class _ProductWidgetState extends State<ProductWidget> {
                   ),
                   const SizedBox(height: 12),
                   // Dropdown for category selection
-                  DropdownButtonFormField<int>(
-                    value: _selectedCategoryId,
-                    decoration: InputDecoration(
-                      labelText: 'Select Category',
-                      labelStyle: TextStyle(fontFamily: 'Poppins'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                    ),
-                    items: _categories.map((category) {
-                      return DropdownMenuItem<int>(
-                        value: category['cat_id'],
-                        child: Text(category['cat_name']),
-                      );
-                    }).toList(),
+                  CustomDropdown<dynamic>(
+                    items: _categories,
+                    selectedItem: _selectedCategoryId != null
+                        ? _categories.firstWhere(
+                            (cat) => cat['cat_id'] == _selectedCategoryId)
+                        : null,
                     onChanged: (value) {
                       setState(() {
-                        _selectedCategoryId =
-                            value; // Update selected category ID
+                        _selectedCategoryId = value?['cat_id'];
                       });
                     },
-                    validator: (value) =>
-                        value == null ? 'Please select a category' : null,
+                    itemAsString: (item) =>
+                        item['cat_name'], // Convert category item to string
+                    label: 'Select Category', // Label for the dropdown
                   ),
                 ],
               ),

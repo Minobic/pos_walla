@@ -19,6 +19,13 @@ class _CustomerWidgetState extends State<CustomerWidget> {
   Map<String, dynamic>? _selectedCustomer;
   List<dynamic> _transactions = [];
 
+  // Define the date format for parsing API date strings
+  final DateFormat apiDateFormat = DateFormat('dd-MM-yyyy HH:mm:ss');
+  // Define the date format for displaying dates
+  final DateFormat dateFormat = DateFormat('dd-MM-yyyy');
+  // Define the time format for displaying times
+  final DateFormat timeFormat = DateFormat('HH:mm');
+
   @override
   void initState() {
     super.initState();
@@ -60,9 +67,12 @@ class _CustomerWidgetState extends State<CustomerWidget> {
     } else if (_sortBy == 'Oldest') {
       _transactions.sort((a, b) => DateTime.parse(a['created_at'])
           .compareTo(DateTime.parse(b['created_at'])));
-    } else if (_sortBy == 'Amount') {
+    } else if (_sortBy == 'Amount: High to Low') {
       _transactions.sort((a, b) =>
           (b['total_amount'] as num).compareTo(a['total_amount'] as num));
+    } else if (_sortBy == 'Amount: Low to High') {
+      _transactions.sort((a, b) =>
+          (a['total_amount'] as num).compareTo(b['total_amount'] as num));
     }
   }
 
@@ -74,11 +84,6 @@ class _CustomerWidgetState extends State<CustomerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('dd-MM-yyyy');
-    final timeFormat = DateFormat('HH:mm');
-    final apiDateFormat =
-        DateFormat('dd-MM-yyyy HH:mm:ss'); // Format for parsing API date
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: Row(
@@ -100,21 +105,28 @@ class _CustomerWidgetState extends State<CustomerWidget> {
                 ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(25),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Customer list card
                         Expanded(
                           flex: 1,
-                          child: Card(
-                            color: Colors.white,
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
                               borderRadius: BorderRadius.circular(15),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.2),
+                                  spreadRadius: 1,
+                                  blurRadius: 5,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.all(20),
+                              padding: const EdgeInsets.all(30),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -125,7 +137,7 @@ class _CustomerWidgetState extends State<CustomerWidget> {
                                       const Text(
                                         'Customer',
                                         style: TextStyle(
-                                          fontSize: 18,
+                                          fontSize: 25,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -166,8 +178,7 @@ class _CustomerWidgetState extends State<CustomerWidget> {
                                                       customer['customer_id']);
                                                 },
                                                 style: ElevatedButton.styleFrom(
-                                                  backgroundColor:
-                                                      Colors.blue[500],
+                                                  backgroundColor: Colors.blue,
                                                   foregroundColor: Colors.white,
                                                   shape: RoundedRectangleBorder(
                                                     borderRadius:
@@ -183,389 +194,29 @@ class _CustomerWidgetState extends State<CustomerWidget> {
                                       },
                                     ),
                                   ),
-                                  const SizedBox(height: 10),
-                                  Center(
-                                    child: TextButton.icon(
-                                      onPressed: () {},
-                                      icon: const Icon(Icons.expand_more),
-                                      label: const Text('Show All My Customer'),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: Colors.blue,
-                                      ),
-                                    ),
-                                  ),
                                 ],
                               ),
                             ),
                           ),
                         ),
                         const SizedBox(width: 20),
-                        // Transaction list card
+                        // Updated Transaction list card
                         Expanded(
                           flex: 1,
-                          child: Card(
-                            color: Colors.white,
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
                               borderRadius: BorderRadius.circular(15),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.2),
+                                  spreadRadius: 1,
+                                  blurRadius: 5,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
                             ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text(
-                                        'Transaction',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      Row(
-                                        children: [
-                                          const Text('Sort by'),
-                                          const SizedBox(width: 5),
-                                          DropdownButton<String>(
-                                            dropdownColor: Colors.white,
-                                            value: _sortBy,
-                                            icon: const Icon(
-                                                Icons.arrow_drop_down),
-                                            underline: Container(),
-                                            onChanged: (String? newValue) {
-                                              setState(() {
-                                                _sortBy = newValue!;
-                                                _sortTransactions(); // Sort transactions when the sort criteria changes
-                                              });
-                                            },
-                                            items: <String>[
-                                              'Recently',
-                                              'Oldest',
-                                              'Amount'
-                                            ].map<DropdownMenuItem<String>>(
-                                                (String value) {
-                                              return DropdownMenuItem<String>(
-                                                value: value,
-                                                child: Text(
-                                                  value,
-                                                  style: const TextStyle(
-                                                    color: Colors.blue,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              );
-                                            }).toList(),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(20),
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Expanded(
-                                            flex: 1,
-                                            child: Card(
-                                              color: Colors.white,
-                                              elevation: 2,
-                                              child: Padding(
-                                                padding:
-                                                    const EdgeInsets.all(15),
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.center,
-                                                  children: [
-                                                    const SizedBox(height: 20),
-                                                    // Avatar
-                                                    CircleAvatar(
-                                                      radius: 40,
-                                                      backgroundColor:
-                                                          Colors.blue[100],
-                                                      child: Text(
-                                                        _selectedCustomer !=
-                                                                null
-                                                            ? _selectedCustomer![
-                                                                'customer_name'][0]
-                                                            : 'C', // Initials of the name
-                                                        style: TextStyle(
-                                                          fontFamily: 'Poppins',
-                                                          color:
-                                                              Colors.blue[700],
-                                                          fontSize: 30,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 30),
-                                                    // Customer Name
-                                                    Text(
-                                                      _selectedCustomer != null
-                                                          ? _selectedCustomer![
-                                                              'customer_name']
-                                                          : 'Customer Name',
-                                                      style: TextStyle(
-                                                        fontFamily: 'Poppins',
-                                                        color: Colors.blue[700],
-                                                        fontSize: 20,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontStyle:
-                                                            FontStyle.italic,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 10),
-                                                    // Mobile Number
-                                                    Text(
-                                                      _selectedCustomer != null
-                                                          ? 'Mobile: ${_selectedCustomer!['customer_mobile']}'
-                                                          : 'Mobile: N/A',
-                                                      style: TextStyle(
-                                                        fontFamily: 'Poppins',
-                                                        color: Colors.grey[600],
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 16,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 30),
-                                                    // Total Amount
-                                                    Container(
-                                                      padding: const EdgeInsets
-                                                          .symmetric(
-                                                          vertical: 10,
-                                                          horizontal: 15),
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.blue[500],
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(10),
-                                                      ),
-                                                      child: Row(
-                                                        mainAxisAlignment:
-                                                            MainAxisAlignment
-                                                                .spaceBetween,
-                                                        children: [
-                                                          Text(
-                                                            'Total Amount:',
-                                                            style: TextStyle(
-                                                              fontFamily:
-                                                                  'Poppins',
-                                                              color:
-                                                                  Colors.white,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                            ),
-                                                          ),
-                                                          Text(
-                                                            _selectedCustomer !=
-                                                                    null
-                                                                ? '₹ ${_selectedCustomer!['total_amount']}'
-                                                                : '₹ 0',
-                                                            style: TextStyle(
-                                                              fontFamily:
-                                                                  'Poppins',
-                                                              color:
-                                                                  Colors.white,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          Expanded(
-                                            flex: 1,
-                                            child: Card(
-                                              color: Colors.white,
-                                              elevation: 2,
-                                              child: Column(
-                                                children: [
-                                                  // Table Header
-                                                  Container(
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        vertical: 10,
-                                                        horizontal: 15),
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.blue[500],
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              5),
-                                                    ),
-                                                    child: const Row(
-                                                      children: [
-                                                        Expanded(
-                                                          flex: 2,
-                                                          child: Text(
-                                                            'Date',
-                                                            style: TextStyle(
-                                                              color:
-                                                                  Colors.white,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                        Expanded(
-                                                          flex: 1,
-                                                          child: Text(
-                                                            'Amount',
-                                                            style: TextStyle(
-                                                              color:
-                                                                  Colors.white,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                  // Transaction List
-                                                  Expanded(
-                                                    child: ListView.builder(
-                                                      itemCount:
-                                                          _transactions.length,
-                                                      itemBuilder:
-                                                          (context, index) {
-                                                        final transaction =
-                                                            _transactions[
-                                                                index];
-                                                        final date = apiDateFormat
-                                                            .parse(transaction[
-                                                                'created_at']);
-                                                        return Container(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  vertical: 15,
-                                                                  horizontal:
-                                                                      15),
-                                                          decoration:
-                                                              BoxDecoration(
-                                                            border: Border(
-                                                              bottom:
-                                                                  BorderSide(
-                                                                color: Colors
-                                                                    .grey
-                                                                    .withOpacity(
-                                                                        0.2),
-                                                                width: 1,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                          child: Row(
-                                                            children: [
-                                                              Expanded(
-                                                                flex: 2,
-                                                                child: Column(
-                                                                  crossAxisAlignment:
-                                                                      CrossAxisAlignment
-                                                                          .start,
-                                                                  children: [
-                                                                    Text(
-                                                                      dateFormat
-                                                                          .format(
-                                                                              date),
-                                                                      style:
-                                                                          const TextStyle(
-                                                                        fontWeight:
-                                                                            FontWeight.bold,
-                                                                      ),
-                                                                    ),
-                                                                    Text(
-                                                                      timeFormat
-                                                                          .format(
-                                                                              date),
-                                                                      style:
-                                                                          TextStyle(
-                                                                        color: Colors
-                                                                            .grey[600],
-                                                                        fontSize:
-                                                                            12,
-                                                                      ),
-                                                                    ),
-                                                                  ],
-                                                                ),
-                                                              ),
-                                                              Expanded(
-                                                                flex: 1,
-                                                                child: Column(
-                                                                  crossAxisAlignment:
-                                                                      CrossAxisAlignment
-                                                                          .start,
-                                                                  children: [
-                                                                    Text(
-                                                                      '₹ ${transaction['total_amount'] ?? '0'}', // Adjust based on your API response
-                                                                      style:
-                                                                          const TextStyle(
-                                                                        fontWeight:
-                                                                            FontWeight.bold,
-                                                                      ),
-                                                                    ),
-                                                                    Text(
-                                                                      transaction[
-                                                                              'payment_method'] ??
-                                                                          'N/A', // Adjust based on your API response
-                                                                      style:
-                                                                          TextStyle(
-                                                                        color: transaction['payment_method'] ==
-                                                                                'Online'
-                                                                            ? Colors.blue[600]
-                                                                            : Colors.grey[600],
-                                                                        fontSize:
-                                                                            12,
-                                                                      ),
-                                                                    ),
-                                                                  ],
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        );
-                                                      },
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Center(
-                                    child: TextButton.icon(
-                                      onPressed: () {},
-                                      icon: const Icon(Icons.expand_more),
-                                      label: const Text(
-                                          'Show All My Transactions'),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: Colors.blue,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                            child: _buildCustomerDetails(),
                           ),
                         ),
                       ],
@@ -576,6 +227,313 @@ class _CustomerWidgetState extends State<CustomerWidget> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCustomerDetails() {
+    return Padding(
+      padding: const EdgeInsets.all(25),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Customer Details',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildCustomerCard(),
+          const SizedBox(height: 20),
+          _buildTransactionHistory(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCustomerCard() {
+    String initials = 'CN';
+    if (_selectedCustomer != null) {
+      List<String> nameParts = _selectedCustomer!['customer_name'].split(' ');
+      if (nameParts.length > 1) {
+        initials = nameParts[0][0] + nameParts[1][0];
+      } else if (nameParts.isNotEmpty) {
+        initials = nameParts[0][0];
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.only(left: 30, top: 20, right: 30, bottom: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.2),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Column(
+            children: [
+              CircleAvatar(
+                radius: 40,
+                backgroundColor: Colors.blue[200],
+                child: Text(
+                  initials,
+                  style: const TextStyle(color: Colors.white, fontSize: 24),
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                _selectedCustomer != null
+                    ? _selectedCustomer!['customer_name']
+                    : 'Customer Name',
+                style: const TextStyle(
+                  fontSize: 25,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                _selectedCustomer != null
+                    ? '+91 ${_selectedCustomer!['customer_mobile']}'
+                    : '+91 9424138512',
+                style: const TextStyle(
+                  fontSize: 20,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF2196F3), Color(0xFF1976D2)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text(
+                  'Total Spend',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 25,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  _selectedCustomer != null
+                      ? '₹ ${_selectedCustomer!['total_amount']}'
+                      : '₹ 10,500',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTransactionHistory() {
+    return Expanded(
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(15),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Transaction History',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      const Text(
+                        'Sort by',
+                        style: TextStyle(
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      DropdownButton<String>(
+                        value: _sortBy,
+                        icon: const Icon(Icons.keyboard_arrow_down,
+                            color: Colors.blue),
+                        style: const TextStyle(
+                          color: Colors.blue,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        underline: Container(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            _sortBy = newValue!;
+                            _sortTransactions(); // Sort transactions when the sort criteria changes
+                          });
+                        },
+                        items: <String>[
+                          'Recently',
+                          'Oldest',
+                          'Amount: High to Low',
+                          'Amount: Low to High'
+                        ].map<DropdownMenuItem<String>>((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF2196F3), Color(0xFF1976D2)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+              margin: const EdgeInsets.symmetric(horizontal: 0),
+              child: Row(
+                children: const [
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      'Date',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 1,
+                    child: Text(
+                      'Amount',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      'Payment Method',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _transactions.length,
+                itemBuilder: (context, index) {
+                  final transaction = _transactions[index];
+                  final date = apiDateFormat.parse(transaction['created_at']);
+                  return Container(
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Colors.grey.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 15),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                dateFormat.format(date),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                timeFormat.format(date),
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          flex: 1,
+                          child: Text(
+                            '₹ ${transaction['total_amount']}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            transaction['payment_method'] ?? 'N/A',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

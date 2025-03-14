@@ -126,7 +126,7 @@ class InvoicePayment(db.Model):
     payment_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     invoice_id = db.Column(db.Integer, db.ForeignKey('Invoice.invoice_id'), nullable=False)
     amount = db.Column(db.Numeric(10, 2), nullable=False)
-    payment_method = db.Column(db.Enum('cash', 'credit_card', 'debit_card', 'mobile_payment'), nullable=False)
+    payment_method = db.Column(db.Enum('Cash', 'Card', 'Online'), nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(IST))
 
 # Coupon Table
@@ -682,9 +682,12 @@ def apply_promo_code(promo_code):
     if coupon:
         current_date = datetime.utcnow()
         if coupon.start_date <= current_date <= coupon.end_date:
-            discount_amount = float(coupon.value) if coupon.discount_type == 'fixed' else float(coupon.value) / 100
-            return jsonify({'discount_amount': discount_amount}), 200
+            return jsonify({
+                'discount_type': coupon.discount_type,
+                'value': float(coupon.value)
+            }), 200
     return jsonify({'error': 'Invalid promo code'}), 404
+
 
 @app.route('/invoices', methods=['POST'])
 def create_invoice():
@@ -763,7 +766,7 @@ def create_invoice():
 
 @app.route('/payment_methods', methods=['GET'])
 def get_payment_methods():
-    payment_methods = ['cash', 'credit_card', 'debit_card', 'mobile_payment']
+    payment_methods = ['Cash', 'Card', 'Online']
     return jsonify(payment_methods), 200
 
 @app.route('/users', methods=['GET'])

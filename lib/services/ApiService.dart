@@ -521,17 +521,21 @@ class ApiService {
   }
 
   // Apply promo code
-  static Future<double> applyPromoCode(
+  static Future<Map<String, dynamic>> applyPromoCode(
       String promoCode, double subtotal) async {
     final url = Uri.parse('$_baseUrl/promocode/$promoCode');
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      double discount = data['discount_amount'];
-      return discount;
+      // Return a map containing the discount type and value
+      return {
+        'discountType': data['discount_type'],
+        'value': data['value'].toDouble(),
+      };
+    } else {
+      throw Exception('Failed to apply promo code: ${response.body}');
     }
-    return 0.0;
   }
 
   // Create invoice

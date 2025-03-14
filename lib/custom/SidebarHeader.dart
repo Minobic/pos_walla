@@ -191,18 +191,6 @@ class _SidebarState extends State<Sidebar> {
                       },
                     );
                   }),
-                  _buildMenuItem('Barcode List', Icons.list,
-                      widget.selectedMenuItem == 'Barcode List', () {
-                    Navigator.pushReplacementNamed(
-                      context,
-                      '/barcodeList',
-                      arguments: {
-                        'name': widget.userName,
-                        'role': widget.userRole,
-                        'userId': widget.userId, // Pass userId
-                      },
-                    );
-                  }),
                   const SizedBox(height: 20),
                   _buildMenuItem('Profile', Icons.person, false, () {}),
                   _buildMenuItem('Settings', Icons.settings, false, () {}),

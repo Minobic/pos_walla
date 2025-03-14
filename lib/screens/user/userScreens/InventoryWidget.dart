@@ -4,6 +4,7 @@ import '../../../custom/SidebarHeader.dart'; // Import the reusable components
 import '../../../services/ApiService.dart'; // Import the ApiService
 import '../../../custom/GradientButton.dart'; // Import the GradientButton
 import '../../../custom/RedButton.dart'; // Import the RedButton
+import '../../../custom/CustomDropdown.dart'; // Import the CustomDropdown
 
 class InventoryWidget extends StatefulWidget {
   final String userName;
@@ -175,23 +176,12 @@ class _InventoryWidgetState extends State<InventoryWidget> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Dropdown for product selection
-                      DropdownButtonFormField<int>(
-                        value: selectedProductId,
-                        decoration: InputDecoration(
-                          labelText: 'Select Product',
-                          labelStyle: TextStyle(fontFamily: 'Poppins'),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
-                          ),
-                        ),
-                        items: products.map((product) {
-                          return DropdownMenuItem<int>(
-                            value: product['product_id'],
-                            child: Text(product['product_name']),
-                          );
-                        }).toList(),
+                      // Custom Dropdown for product selection
+                      CustomDropdown<int>(
+                        items: products
+                            .map((product) => product['product_id'] as int)
+                            .toList(),
+                        selectedItem: selectedProductId,
                         onChanged: (value) {
                           setState(() {
                             selectedProductId = value;
@@ -200,37 +190,27 @@ class _InventoryWidgetState extends State<InventoryWidget> {
                                 null; // Reset stock level selection
                           });
                         },
-                        validator: (value) =>
-                            value == null ? 'Please select a product' : null,
+                        itemAsString: (item) => products.firstWhere((product) =>
+                            product['product_id'] == item)['product_name'],
+                        label: 'Select Product',
                       ),
                       const SizedBox(height: 12),
                       // Conditionally render batch selection dropdown
                       if (selectedProductId != null)
-                        DropdownButtonFormField<int>(
-                          value: selectedBatchId,
-                          decoration: InputDecoration(
-                            labelText: 'Select Batch',
-                            labelStyle: TextStyle(fontFamily: 'Poppins'),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(15),
-                              borderSide:
-                                  BorderSide(color: Colors.grey.shade300),
-                            ),
-                          ),
+                        CustomDropdown<int>(
                           items: _getBatchesForProduct(selectedProductId!)
-                              .map((batch) {
-                            return DropdownMenuItem<int>(
-                              value: batch['p_batch_id'],
-                              child: Text(batch['p_batch_name']),
-                            );
-                          }).toList(),
+                              .map((batch) => batch['p_batch_id'] as int)
+                              .toList(),
+                          selectedItem: selectedBatchId,
                           onChanged: (value) {
                             setState(() {
                               selectedBatchId = value;
                             });
                           },
-                          validator: (value) =>
-                              value == null ? 'Please select a batch' : null,
+                          itemAsString: (item) => _allBatches.firstWhere(
+                              (batch) =>
+                                  batch['p_batch_id'] == item)['p_batch_name'],
+                          label: 'Select Batch',
                         ),
                       const SizedBox(height: 12),
                       // Conditionally render remaining fields after batch selection
@@ -373,57 +353,36 @@ class _InventoryWidgetState extends State<InventoryWidget> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Dropdown for product selection
-                  DropdownButtonFormField<int>(
-                    value: inventory['p_id'],
-                    decoration: InputDecoration(
-                      labelText: 'Select Product',
-                      labelStyle: TextStyle(fontFamily: 'Poppins'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                    ),
-                    items: _products.map((product) {
-                      return DropdownMenuItem<int>(
-                        value: product['product_id'],
-                        child: Text(product['product_name']),
-                      );
-                    }).toList(),
+                  // Custom Dropdown for product selection
+                  CustomDropdown<int>(
+                    items: _products
+                        .map((product) => product['product_id'] as int)
+                        .toList(),
+                    selectedItem: inventory['p_id'],
                     onChanged: (value) {
                       setState(() {
                         _selectedProductId = value;
                       });
                     },
-                    validator: (value) =>
-                        value == null ? 'Please select a product' : null,
+                    itemAsString: (item) => _products.firstWhere((product) =>
+                        product['product_id'] == item)['product_name'],
+                    label: 'Select Product',
                   ),
                   const SizedBox(height: 12),
                   // Dropdown for batch selection
-                  DropdownButtonFormField<int>(
-                    value: inventory['p_batch_id'],
-                    decoration: InputDecoration(
-                      labelText: 'Select Batch',
-                      labelStyle: TextStyle(fontFamily: 'Poppins'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                    ),
-                    items:
-                        _getBatchesForProduct(inventory['p_id']).map((batch) {
-                      return DropdownMenuItem<int>(
-                        value: batch['p_batch_id'],
-                        child: Text(batch['p_batch_name']),
-                      );
-                    }).toList(),
+                  CustomDropdown<int>(
+                    items: _getBatchesForProduct(inventory['p_id'])
+                        .map((batch) => batch['p_batch_id'] as int)
+                        .toList(),
+                    selectedItem: inventory['p_batch_id'],
                     onChanged: (value) {
                       setState(() {
                         _selectedBatchId = value;
                       });
                     },
-                    validator: (value) =>
-                        value == null ? 'Please select a batch' : null,
+                    itemAsString: (item) => _allBatches.firstWhere(
+                        (batch) => batch['p_batch_id'] == item)['p_batch_name'],
+                    label: 'Select Batch',
                   ),
                   const SizedBox(height: 12),
                   // Read-only field for batch expiry date

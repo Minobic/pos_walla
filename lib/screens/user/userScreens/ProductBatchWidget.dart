@@ -4,6 +4,7 @@ import '../../../custom/SidebarHeader.dart'; // Import the reusable components
 import '../../../services/ApiService.dart'; // Import the ApiService
 import '../../../custom/GradientButton.dart'; // Import the GradientButton
 import '../../../custom/RedButton.dart'; // Import the RedButton
+import '../../../custom/CustomDropdown.dart'; // Adjust the path as necessary
 
 class ProductBatchWidget extends StatefulWidget {
   final String userName;
@@ -142,26 +143,15 @@ class _ProductBatchWidgetState extends State<ProductBatchWidget> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Dropdown for product selection
-                  DropdownButtonFormField<int>(
-                    value: _selectedProductId,
-                    decoration: InputDecoration(
-                      labelText: 'Select Product',
-                      labelStyle: TextStyle(fontFamily: 'Poppins'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                    ),
-                    items: _products.map((product) {
-                      return DropdownMenuItem<int>(
-                        value: product['product_id'],
-                        child: Text(product['product_name']),
-                      );
-                    }).toList(),
+                  CustomDropdown<dynamic>(
+                    items: _products,
+                    selectedItem: _selectedProductId != null
+                        ? _products.firstWhere(
+                            (prod) => prod['product_id'] == _selectedProductId)
+                        : null,
                     onChanged: (value) {
                       setState(() {
-                        _selectedProductId =
-                            value; // Update selected product ID
+                        _selectedProductId = value?['product_id'];
                         if (_selectedProductId != null) {
                           // Generate batch name
                           String productName = _products.firstWhere((product) =>
@@ -174,8 +164,9 @@ class _ProductBatchWidgetState extends State<ProductBatchWidget> {
                         }
                       });
                     },
-                    validator: (value) =>
-                        value == null ? 'Please select a product' : null,
+                    itemAsString: (item) =>
+                        item['product_name'], // Convert product item to string
+                    label: 'Select Product', // Label for the dropdown
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -298,30 +289,30 @@ class _ProductBatchWidgetState extends State<ProductBatchWidget> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Dropdown for product selection
-                  DropdownButtonFormField<int>(
-                    value: _selectedProductId,
-                    decoration: InputDecoration(
-                      labelText: 'Select Product',
-                      labelStyle: TextStyle(fontFamily: 'Poppins'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                    ),
-                    items: _products.map((product) {
-                      return DropdownMenuItem<int>(
-                        value: product['product_id'],
-                        child: Text(product['product_name']),
-                      );
-                    }).toList(),
+                  CustomDropdown<dynamic>(
+                    items: _products,
+                    selectedItem: _selectedProductId != null
+                        ? _products.firstWhere(
+                            (prod) => prod['product_id'] == _selectedProductId)
+                        : null,
                     onChanged: (value) {
                       setState(() {
-                        _selectedProductId =
-                            value; // Update selected product ID
+                        _selectedProductId = value?['product_id'];
+                        if (_selectedProductId != null) {
+                          // Generate batch name
+                          String productName = _products.firstWhere((product) =>
+                              product['product_id'] ==
+                              _selectedProductId)['product_name'];
+                          int batchCount =
+                              _productBatchCount[_selectedProductId] ?? 0;
+                          nameController.text =
+                              '$productName${(batchCount + 1).toString().padLeft(3, '0')}';
+                        }
                       });
                     },
-                    validator: (value) =>
-                        value == null ? 'Please select a product' : null,
+                    itemAsString: (item) =>
+                        item['product_name'], // Convert product item to string
+                    label: 'Select Product', // Label for the dropdown
                   ),
                   const SizedBox(height: 12),
                   TextField(

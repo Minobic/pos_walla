@@ -34,6 +34,7 @@ class _BillingWidgetState extends State<BillingWidget> {
   List<Map<String, dynamic>> _filteredBatches = [];
   int? _selectedBatchIndex;
   FocusNode _barcodeFocusNode = FocusNode();
+  bool _isDropdownVisible = false;
 
   @override
   void initState() {
@@ -87,7 +88,13 @@ class _BillingWidgetState extends State<BillingWidget> {
   // Function to convert "DD-MM-YYYY" to ISO 8601 format
   String convertToIsoFormat(String dateStr) {
     List<String> dateParts = dateStr.split('-');
-    return '${dateParts[2]}-${dateParts[1]}-${dateParts[0]}T00:00:00';
+    return '${dateParts[2]}-${dateParts[1]}-${dateParts[0]}';
+  }
+
+  // Function to convert ISO 8601 format to "DD-MM-YYYY"
+  String convertToIndianFormat(String dateStr) {
+    List<String> dateParts = dateStr.split('-');
+    return '${dateParts[2]}-${dateParts[1]}-${dateParts[0]}';
   }
 
   void _fetchProductBatches() async {
@@ -143,21 +150,22 @@ class _BillingWidgetState extends State<BillingWidget> {
     try {
       final product = await ApiService.fetchProductByBarcode(barcode);
       if (product != null) {
-        bool isExisting = false;
-        for (var item in _billingItems) {
-          if (item['product_id'] == product['product_id']) {
-            item['quantity'] += 1;
-            item['total_price'] = item['quantity'] * item['sale_price'];
-            isExisting = true;
-            await _checkBatchStock(item['batch'], item['quantity']);
-            break;
-          }
-        }
-        if (!isExisting) {
-          int? selectedBatch =
-              await _findAvailableBatch(product['product_id'], 1);
+        int? selectedBatch =
+            await _findAvailableBatch(product['product_id'], 1);
 
-          if (selectedBatch != null) {
+        if (selectedBatch != null) {
+          bool isExisting = false;
+          for (var item in _billingItems) {
+            if (item['product_id'] == product['product_id'] &&
+                item['batch'] == selectedBatch) {
+              item['quantity'] += 1;
+              item['total_price'] = item['quantity'] * item['sale_price'];
+              isExisting = true;
+              await _checkBatchStock(item['batch'], item['quantity']);
+              break;
+            }
+          }
+          if (!isExisting) {
             setState(() {
               _billingItems.add({
                 'product_id': product['product_id'],
@@ -171,16 +179,14 @@ class _BillingWidgetState extends State<BillingWidget> {
               _calculateTotals();
             });
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content: Text('No available batch with sufficient stock')),
-            );
+            setState(() {
+              _calculateTotals();
+            });
           }
         } else {
-          // Trigger a rebuild to reflect the updated quantity
-          setState(() {
-            _calculateTotals();
-          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('No available batch with sufficient stock')),
+          );
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -202,7 +208,8 @@ class _BillingWidgetState extends State<BillingWidget> {
       if (product != null) {
         bool isExisting = false;
         for (var item in _billingItems) {
-          if (item['product_id'] == product['product_id']) {
+          if (item['product_id'] == product['product_id'] &&
+              item['batch'] == batchId) {
             item['quantity'] += 1;
             item['total_price'] = item['quantity'] * item['sale_price'];
             isExisting = true;
@@ -334,604 +341,693 @@ class _BillingWidgetState extends State<BillingWidget> {
   @override
   Widget build(BuildContext context) {
     return RawKeyboardListener(
-      focusNode: FocusNode(), // Create a focus node for the keyboard listener
-      onKey: _handleKeyPress,
-      child: Scaffold(
-        body: Row(
-          children: [
-            Sidebar(
-              isSidebarOpen: _isSidebarOpen,
-              toggleSidebar: _toggleSidebar,
-              userName: widget.userName,
-              userRole: widget.userRole,
-              userId: widget.userId,
-              selectedMenuItem: 'Billing',
-            ),
-            Expanded(
-              child: Container(
-                color: Colors.white,
-                child: Column(
-                  children: [
-                    Header(
-                      userName: widget.userName,
-                      userRole: widget.userRole,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _barcodeController,
-                              focusNode: _barcodeFocusNode,
-                              decoration: InputDecoration(
-                                hintText: 'Scan Barcode',
-                                hintStyle: TextStyle(fontFamily: 'Poppins'),
-                                prefixIcon: const Icon(Icons.qr_code_scanner),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(25),
-                                ),
-                              ),
-                              onSubmitted: (value) {
-                                // Trigger the barcode change listener
-                                _onBarcodeChanged();
-                              },
+        focusNode: FocusNode(), // Create a focus node for the keyboard listener
+        onKey: _handleKeyPress,
+        child: GestureDetector(
+          onTap: () {
+            // Close the dropdown when tapping outside
+            setState(() {
+              _isDropdownVisible = false;
+              _filteredBatches.clear();
+            });
+          },
+          child: Scaffold(
+            body: Row(
+              children: [
+                Sidebar(
+                  isSidebarOpen: _isSidebarOpen,
+                  toggleSidebar: _toggleSidebar,
+                  userName: widget.userName,
+                  userRole: widget.userRole,
+                  userId: widget.userId,
+                  selectedMenuItem: 'Billing',
+                ),
+                Expanded(
+                  child: Container(
+                    color: Colors.white,
+                    child: Stack(
+                      // Use Stack to overlay the dropdown
+                      children: [
+                        Column(
+                          children: [
+                            Header(
+                              userName: widget.userName,
+                              userRole: widget.userRole,
                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.add, color: Colors.white),
-                            label: const Text('Add Product',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontFamily: 'Poppins',
-                                )),
-                            onPressed: () {
-                              _addProductByBarcode(_barcodeController.text);
-                              _barcodeController.clear();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 20,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Show dropdown for batch selection
-                    if (_filteredBatches.isNotEmpty) ...[
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          children:
-                              List.generate(_filteredBatches.length, (index) {
-                            return GestureDetector(
-                              onTap: () {
-                                _addProduct(
-                                    _filteredBatches[index]['p_batch_id']);
-                                _barcodeController.clear();
-                                _filteredBatches.clear();
-                              },
-                              child: Container(
-                                color: _selectedBatchIndex == index
-                                    ? Colors.blue.shade100
-                                    : null,
-                                child: ListTile(
-                                  title: Text(
-                                      _filteredBatches[index]['p_batch_name']),
-                                ),
-                              ),
-                            );
-                          }),
-                        ),
-                      ),
-                    ],
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(25),
-                            border: Border.all(color: Colors.grey.shade300),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.white,
-                                spreadRadius: 1,
-                                blurRadius: 5,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(10),
-                                child: Column(
-                                  children: [
-                                    const Center(
-                                      child: Text(
-                                        'Billing Table',
-                                        style: TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                          fontFamily: 'Poppins',
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _barcodeController,
+                                      focusNode: _barcodeFocusNode,
+                                      decoration: InputDecoration(
+                                        hintText: 'Scan Barcode',
+                                        hintStyle:
+                                            TextStyle(fontFamily: 'Poppins'),
+                                        prefixIcon:
+                                            const Icon(Icons.qr_code_scanner),
+                                        border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(25),
                                         ),
                                       ),
+                                      onSubmitted: (value) {
+                                        // Trigger the barcode change listener
+                                        _onBarcodeChanged();
+                                      },
+                                      onTap: () {
+                                        // Show the dropdown when the text field is tapped
+                                        setState(() {
+                                          _isDropdownVisible = true;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  ElevatedButton.icon(
+                                    icon: const Icon(Icons.add,
+                                        color: Colors.white),
+                                    label: const Text('Add Product',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontFamily: 'Poppins',
+                                        )),
+                                    onPressed: () {
+                                      _addProductByBarcode(
+                                          _barcodeController.text);
+                                      _barcodeController.clear();
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.blue,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                        vertical: 20,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(25),
+                                    border:
+                                        Border.all(color: Colors.grey.shade300),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.white,
+                                        spreadRadius: 1,
+                                        blurRadius: 5,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.all(10),
+                                        child: Column(
+                                          children: [
+                                            const Center(
+                                              child: Text(
+                                                'Billing Table',
+                                                style: TextStyle(
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontFamily: 'Poppins',
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(16),
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(25),
+                                              border: Border.all(
+                                                  color: Colors.grey.shade300),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.white,
+                                                  spreadRadius: 1,
+                                                  blurRadius: 5,
+                                                  offset: const Offset(0, 3),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Column(
+                                              children: [
+                                                // Fixed Header with Gradient
+                                                Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(vertical: 16),
+                                                  decoration:
+                                                      const BoxDecoration(
+                                                    gradient: LinearGradient(
+                                                      colors: [
+                                                        Color(0xFF2196F3),
+                                                        Color(0xFF1976D2)
+                                                      ],
+                                                      begin:
+                                                          Alignment.centerLeft,
+                                                      end:
+                                                          Alignment.centerRight,
+                                                    ),
+                                                    borderRadius:
+                                                        BorderRadius.only(
+                                                      topLeft:
+                                                          Radius.circular(25),
+                                                      topRight:
+                                                          Radius.circular(25),
+                                                    ),
+                                                  ),
+                                                  child: const Row(
+                                                    children: [
+                                                      Expanded(
+                                                        flex: 2,
+                                                        child: Text(
+                                                          'Product Name',
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontFamily:
+                                                                'Poppins',
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          ),
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                        ),
+                                                      ),
+                                                      Expanded(
+                                                        flex: 1,
+                                                        child: Text(
+                                                          'Batch',
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontFamily:
+                                                                'Poppins',
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          ),
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                        ),
+                                                      ),
+                                                      Expanded(
+                                                        flex: 1,
+                                                        child: Text(
+                                                          'Quantity',
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontFamily:
+                                                                'Poppins',
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          ),
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                        ),
+                                                      ),
+                                                      Expanded(
+                                                        flex: 1,
+                                                        child: Text(
+                                                          'MRP',
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontFamily:
+                                                                'Poppins',
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          ),
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                        ),
+                                                      ),
+                                                      Expanded(
+                                                        flex: 1,
+                                                        child: Text(
+                                                          'Sale Price',
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontFamily:
+                                                                'Poppins',
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          ),
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                        ),
+                                                      ),
+                                                      Expanded(
+                                                        flex: 1,
+                                                        child: Text(
+                                                          'Total Price',
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontFamily:
+                                                                'Poppins',
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          ),
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                        ),
+                                                      ),
+                                                      Expanded(
+                                                        flex: 1,
+                                                        child: Text(
+                                                          'Action',
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontFamily:
+                                                                'Poppins',
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          ),
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                // Scrollable Data
+                                                Expanded(
+                                                  child: ListView.builder(
+                                                    padding: EdgeInsets.zero,
+                                                    itemCount:
+                                                        _billingItems.length,
+                                                    itemBuilder:
+                                                        (context, index) {
+                                                      final item =
+                                                          _billingItems[index];
+                                                      final productBatches = _productBatches
+                                                          .where((batch) =>
+                                                              batch['p_id'] ==
+                                                                  item[
+                                                                      'product_id'] &&
+                                                              DateTime.parse(batch[
+                                                                      'p_batch_exp'])
+                                                                  .isAfter(
+                                                                      DateTime
+                                                                          .now()))
+                                                          .toList();
+
+                                                      return Container(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                vertical: 5),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          border: Border(
+                                                            bottom: BorderSide(
+                                                                color: Colors
+                                                                    .grey
+                                                                    .shade300),
+                                                          ),
+                                                        ),
+                                                        child: Row(
+                                                          children: [
+                                                            Expanded(
+                                                              flex: 2,
+                                                              child: Text(
+                                                                item[
+                                                                    'product_name'],
+                                                                style: const TextStyle(
+                                                                    fontFamily:
+                                                                        'Poppins'),
+                                                                textAlign:
+                                                                    TextAlign
+                                                                        .center,
+                                                              ),
+                                                            ),
+                                                            Expanded(
+                                                              flex: 1,
+                                                              child:
+                                                                  DropdownButton<
+                                                                      int>(
+                                                                value: item[
+                                                                    'batch'],
+                                                                onChanged:
+                                                                    (value) async {
+                                                                  try {
+                                                                    await _checkBatchStock(
+                                                                        value!,
+                                                                        item[
+                                                                            'quantity']);
+                                                                    setState(
+                                                                        () {
+                                                                      _billingItems[index]
+                                                                              [
+                                                                              'batch'] =
+                                                                          value;
+                                                                    });
+                                                                  } catch (e) {
+                                                                    ScaffoldMessenger.of(
+                                                                            context)
+                                                                        .showSnackBar(
+                                                                      SnackBar(
+                                                                          content:
+                                                                              Text('Failed to update batch: $e')),
+                                                                    );
+                                                                  }
+                                                                },
+                                                                items: productBatches
+                                                                    .map(
+                                                                        (batch) {
+                                                                  return DropdownMenuItem<
+                                                                      int>(
+                                                                    value: batch[
+                                                                            'p_batch_id']
+                                                                        as int,
+                                                                    child: Text(
+                                                                        batch[
+                                                                            'p_batch_name']),
+                                                                  );
+                                                                }).toList(),
+                                                              ),
+                                                            ),
+                                                            Expanded(
+                                                              flex: 1,
+                                                              child: Row(
+                                                                mainAxisAlignment:
+                                                                    MainAxisAlignment
+                                                                        .center,
+                                                                children: [
+                                                                  IconButton(
+                                                                    icon: const Icon(
+                                                                        Icons
+                                                                            .remove,
+                                                                        color: Colors
+                                                                            .red),
+                                                                    onPressed:
+                                                                        () {
+                                                                      if (_billingItems[index]
+                                                                              [
+                                                                              'quantity'] >
+                                                                          1) {
+                                                                        _updateQuantity(
+                                                                            index,
+                                                                            _billingItems[index]['quantity'] -
+                                                                                1);
+                                                                      }
+                                                                    },
+                                                                  ),
+                                                                  Text(
+                                                                    _billingItems[index]
+                                                                            [
+                                                                            'quantity']
+                                                                        .toString(),
+                                                                    style: const TextStyle(
+                                                                        fontFamily:
+                                                                            'Poppins'),
+                                                                    textAlign:
+                                                                        TextAlign
+                                                                            .center,
+                                                                  ),
+                                                                  IconButton(
+                                                                    icon: const Icon(
+                                                                        Icons
+                                                                            .add,
+                                                                        color: Colors
+                                                                            .green),
+                                                                    onPressed:
+                                                                        () async {
+                                                                      try {
+                                                                        await _checkBatchStock(
+                                                                            _billingItems[index][
+                                                                                'batch'],
+                                                                            _billingItems[index]['quantity'] +
+                                                                                1);
+                                                                        _updateQuantity(
+                                                                            index,
+                                                                            _billingItems[index]['quantity'] +
+                                                                                1);
+                                                                      } catch (e) {
+                                                                        ScaffoldMessenger.of(context)
+                                                                            .showSnackBar(
+                                                                          SnackBar(
+                                                                              content: Text('Failed to update quantity: $e')),
+                                                                        );
+                                                                      }
+                                                                    },
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                            Expanded(
+                                                              flex: 1,
+                                                              child: Text(
+                                                                item['mrp_price']
+                                                                    .toString(),
+                                                                style: const TextStyle(
+                                                                    fontFamily:
+                                                                        'Poppins'),
+                                                                textAlign:
+                                                                    TextAlign
+                                                                        .center,
+                                                              ),
+                                                            ),
+                                                            Expanded(
+                                                              flex: 1,
+                                                              child: Text(
+                                                                item['sale_price']
+                                                                    .toString(),
+                                                                style: const TextStyle(
+                                                                    fontFamily:
+                                                                        'Poppins'),
+                                                                textAlign:
+                                                                    TextAlign
+                                                                        .center,
+                                                              ),
+                                                            ),
+                                                            Expanded(
+                                                              flex: 1,
+                                                              child: Text(
+                                                                item['total_price']
+                                                                    .toString(),
+                                                                style: const TextStyle(
+                                                                    fontFamily:
+                                                                        'Poppins'),
+                                                                textAlign:
+                                                                    TextAlign
+                                                                        .center,
+                                                              ),
+                                                            ),
+                                                            Expanded(
+                                                              flex: 1,
+                                                              child: IconButton(
+                                                                icon: const Icon(
+                                                                    Icons
+                                                                        .delete,
+                                                                    color: Colors
+                                                                        .red),
+                                                                onPressed: () =>
+                                                                    _removeItem(
+                                                                        index),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      );
+                                                    },
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Total Container
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(25),
+                                  border:
+                                      Border.all(color: Colors.grey.shade300),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.white,
+                                      spreadRadius: 1,
+                                      blurRadius: 5,
+                                      offset: const Offset(0, 3),
                                     ),
                                   ],
                                 ),
-                              ),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(25),
-                                      border: Border.all(
-                                          color: Colors.grey.shade300),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.white,
-                                          spreadRadius: 1,
-                                          blurRadius: 5,
-                                          offset: const Offset(0, 3),
-                                        ),
-                                      ],
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        // Fixed Header with Gradient
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 16),
-                                          decoration: const BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: [
-                                                Color(0xFF2196F3),
-                                                Color(0xFF1976D2)
-                                              ],
-                                              begin: Alignment.centerLeft,
-                                              end: Alignment.centerRight,
-                                            ),
-                                            borderRadius: BorderRadius.only(
-                                              topLeft: Radius.circular(25),
-                                              topRight: Radius.circular(25),
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          const Text(
+                                            'Total Products',
+                                            style: TextStyle(
+                                              fontFamily: 'Poppins',
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                          child: const Row(
-                                            children: [
-                                              Expanded(
-                                                flex: 2,
-                                                child: Text(
-                                                  'Product Name',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontFamily: 'Poppins',
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ),
-                                              Expanded(
-                                                flex: 1,
-                                                child: Text(
-                                                  'Batch',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontFamily: 'Poppins',
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ),
-                                              Expanded(
-                                                flex: 1,
-                                                child: Text(
-                                                  'Quantity',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontFamily: 'Poppins',
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ),
-                                              Expanded(
-                                                flex: 1,
-                                                child: Text(
-                                                  'MRP',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontFamily: 'Poppins',
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ),
-                                              Expanded(
-                                                flex: 1,
-                                                child: Text(
-                                                  'Sale Price',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontFamily: 'Poppins',
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ),
-                                              Expanded(
-                                                flex: 1,
-                                                child: Text(
-                                                  'Total Price',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontFamily: 'Poppins',
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ),
-                                              Expanded(
-                                                flex: 1,
-                                                child: Text(
-                                                  'Action',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontFamily: 'Poppins',
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ),
-                                            ],
+                                          Text(
+                                            '${_billingItems.length}',
+                                            style: const TextStyle(
+                                              fontFamily: 'Poppins',
+                                              fontSize: 16,
+                                            ),
                                           ),
+                                        ],
+                                      ),
+                                      Container(
+                                        height: 40,
+                                        child: const VerticalDivider(
+                                          color: Colors.grey,
+                                          thickness: 1,
                                         ),
-                                        // Scrollable Data
-                                        Expanded(
-                                          child: ListView.builder(
-                                            padding: EdgeInsets.zero,
-                                            itemCount: _billingItems.length,
-                                            itemBuilder: (context, index) {
-                                              final item = _billingItems[index];
-                                              final productBatches =
-                                                  _productBatches
-                                                      .where((batch) =>
-                                                          batch['p_id'] ==
-                                                              item[
-                                                                  'product_id'] &&
-                                                          DateTime.parse(batch[
-                                                                  'p_batch_exp'])
-                                                              .isAfter(DateTime
-                                                                  .now()))
-                                                      .toList();
-
-                                              return Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                        vertical: 5),
-                                                decoration: BoxDecoration(
-                                                  border: Border(
-                                                    bottom: BorderSide(
-                                                        color: Colors
-                                                            .grey.shade300),
-                                                  ),
-                                                ),
-                                                child: Row(
-                                                  children: [
-                                                    Expanded(
-                                                      flex: 2,
-                                                      child: Text(
-                                                        item['product_name'],
-                                                        style: const TextStyle(
-                                                            fontFamily:
-                                                                'Poppins'),
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                      ),
-                                                    ),
-                                                    Expanded(
-                                                      flex: 1,
-                                                      child:
-                                                          DropdownButton<int>(
-                                                        value: item['batch'],
-                                                        onChanged:
-                                                            (value) async {
-                                                          try {
-                                                            await _checkBatchStock(
-                                                                value!,
-                                                                item[
-                                                                    'quantity']);
-                                                            setState(() {
-                                                              _billingItems[
-                                                                          index]
-                                                                      [
-                                                                      'batch'] =
-                                                                  value;
-                                                            });
-                                                          } catch (e) {
-                                                            ScaffoldMessenger
-                                                                    .of(context)
-                                                                .showSnackBar(
-                                                              SnackBar(
-                                                                  content: Text(
-                                                                      'Failed to update batch: $e')),
-                                                            );
-                                                          }
-                                                        },
-                                                        items: productBatches
-                                                            .map((batch) {
-                                                          return DropdownMenuItem<
-                                                              int>(
-                                                            value: batch[
-                                                                    'p_batch_id']
-                                                                as int,
-                                                            child: Text(batch[
-                                                                'p_batch_name']),
-                                                          );
-                                                        }).toList(),
-                                                      ),
-                                                    ),
-                                                    Expanded(
-                                                      flex: 1,
-                                                      child: Row(
-                                                        mainAxisAlignment:
-                                                            MainAxisAlignment
-                                                                .center,
-                                                        children: [
-                                                          IconButton(
-                                                            icon: const Icon(
-                                                                Icons.remove,
-                                                                color:
-                                                                    Colors.red),
-                                                            onPressed: () {
-                                                              if (_billingItems[
-                                                                          index]
-                                                                      [
-                                                                      'quantity'] >
-                                                                  1) {
-                                                                _updateQuantity(
-                                                                    index,
-                                                                    _billingItems[index]
-                                                                            [
-                                                                            'quantity'] -
-                                                                        1);
-                                                              }
-                                                            },
-                                                          ),
-                                                          Text(
-                                                            _billingItems[index]
-                                                                    ['quantity']
-                                                                .toString(),
-                                                            style: const TextStyle(
-                                                                fontFamily:
-                                                                    'Poppins'),
-                                                            textAlign: TextAlign
-                                                                .center,
-                                                          ),
-                                                          IconButton(
-                                                            icon: const Icon(
-                                                                Icons.add,
-                                                                color: Colors
-                                                                    .green),
-                                                            onPressed:
-                                                                () async {
-                                                              try {
-                                                                await _checkBatchStock(
-                                                                    _billingItems[
-                                                                            index]
-                                                                        [
-                                                                        'batch'],
-                                                                    _billingItems[index]
-                                                                            [
-                                                                            'quantity'] +
-                                                                        1);
-                                                                _updateQuantity(
-                                                                    index,
-                                                                    _billingItems[index]
-                                                                            [
-                                                                            'quantity'] +
-                                                                        1);
-                                                              } catch (e) {
-                                                                ScaffoldMessenger.of(
-                                                                        context)
-                                                                    .showSnackBar(
-                                                                  SnackBar(
-                                                                      content: Text(
-                                                                          'Failed to update quantity: $e')),
-                                                                );
-                                                              }
-                                                            },
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                    Expanded(
-                                                      flex: 1,
-                                                      child: Text(
-                                                        item['mrp_price']
-                                                            .toString(),
-                                                        style: const TextStyle(
-                                                            fontFamily:
-                                                                'Poppins'),
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                      ),
-                                                    ),
-                                                    Expanded(
-                                                      flex: 1,
-                                                      child: Text(
-                                                        item['sale_price']
-                                                            .toString(),
-                                                        style: const TextStyle(
-                                                            fontFamily:
-                                                                'Poppins'),
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                      ),
-                                                    ),
-                                                    Expanded(
-                                                      flex: 1,
-                                                      child: Text(
-                                                        item['total_price']
-                                                            .toString(),
-                                                        style: const TextStyle(
-                                                            fontFamily:
-                                                                'Poppins'),
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                      ),
-                                                    ),
-                                                    Expanded(
-                                                      flex: 1,
-                                                      child: IconButton(
-                                                        icon: const Icon(
-                                                            Icons.delete,
-                                                            color: Colors.red),
-                                                        onPressed: () =>
-                                                            _removeItem(index),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-                                            },
+                                      ),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          const Text(
+                                            'Total Quantity',
+                                            style: TextStyle(
+                                              fontFamily: 'Poppins',
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
+                                          Text(
+                                            '$_totalQuantity',
+                                            style: const TextStyle(
+                                              fontFamily: 'Poppins',
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Container(
+                                        height: 40,
+                                        child: const VerticalDivider(
+                                          color: Colors.grey,
+                                          thickness: 1,
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          const Text(
+                                            'Total Price',
+                                            style: TextStyle(
+                                              fontFamily: 'Poppins',
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          Text(
+                                            '₹$_totalPrice',
+                                            style: const TextStyle(
+                                              fontFamily: 'Poppins',
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Total Container
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(25),
-                          border: Border.all(color: Colors.grey.shade300),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.white,
-                              spreadRadius: 1,
-                              blurRadius: 5,
-                              offset: const Offset(0, 3),
+                            ),
+                            // Proceed to Checkout Button
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: GradientButton(
+                                text: 'Proceed to Checkout',
+                                onPressed: _proceedToCheckout,
+                                width: double.infinity,
+                              ),
                             ),
                           ],
                         ),
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  const Text(
-                                    'Total Products',
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${_billingItems.length}',
-                                    style: const TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 16,
-                                    ),
+                        // Floating Dropdown
+                        if (_filteredBatches.isNotEmpty)
+                          Positioned(
+                            top:
+                                170, // Adjust this value to position the dropdown correctly below the text field
+                            left: 16,
+                            right: 16,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey),
+                                borderRadius: BorderRadius.circular(8),
+                                color: Colors.white,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    spreadRadius: 2,
+                                    blurRadius: 5,
+                                    offset: const Offset(0, 3),
                                   ),
                                 ],
                               ),
-                              Container(
-                                height: 40,
-                                child: const VerticalDivider(
-                                  color: Colors.grey,
-                                  thickness: 1,
-                                ),
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  const Text(
-                                    'Total Quantity',
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
+                              child: Column(
+                                children: List.generate(_filteredBatches.length,
+                                    (index) {
+                                  return GestureDetector(
+                                    onTap: () {
+                                      _addProduct(_filteredBatches[index]
+                                          ['p_batch_id']);
+                                      _barcodeController.clear();
+                                      setState(() {
+                                        _filteredBatches.clear();
+                                        _isDropdownVisible = false;
+                                      });
+                                    },
+                                    child: Container(
+                                      color: _selectedBatchIndex == index
+                                          ? Colors.blue.shade100
+                                          : null,
+                                      child: ListTile(
+                                        title: Text(_filteredBatches[index]
+                                            ['p_batch_name']),
+                                        subtitle: Text(
+                                            'Exp: ${convertToIndianFormat(_filteredBatches[index]['p_batch_exp'])}'),
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    '$_totalQuantity',
-                                    style: const TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ],
+                                  );
+                                }),
                               ),
-                              Container(
-                                height: 40,
-                                child: const VerticalDivider(
-                                  color: Colors.grey,
-                                  thickness: 1,
-                                ),
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  const Text(
-                                    'Total Price',
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    '₹$_totalPrice',
-                                    style: const TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
-                      ),
+                      ],
                     ),
-                    // Proceed to Checkout Button
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: GradientButton(
-                        text: 'Proceed to Checkout',
-                        onPressed: _proceedToCheckout,
-                        width: double.infinity,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
+          ),
+        ));
   }
 }
