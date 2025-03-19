@@ -644,4 +644,52 @@ class ApiService {
           'Failed to fetch customer transactions: ${response.body}');
     }
   }
+
+  static Future<List<dynamic>> fetchCustomTransactions(
+      String startDate, String endDate) async {
+    final response = await http.get(
+      Uri.parse(
+          '$_baseUrl/transactions?start_date=$startDate&end_date=$endDate'),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to fetch custom transactions');
+    }
+  }
+
+  static Future<void> updateEmployeeRole(int userId, String newRole) async {
+    final url = Uri.parse('$_baseUrl/users/$userId/role');
+    final response = await http.put(
+      url,
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{
+        'role': newRole,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update role: ${response.body}');
+    }
+  }
+
+  static Future<void> updateEmployeeStatus(int userId, String newStatus) async {
+    final url = Uri.parse('$_baseUrl/users/$userId/status');
+    final response = await http.put(
+      url,
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{
+        'status': newStatus,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update status: ${response.body}');
+    }
+  }
 }

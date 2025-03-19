@@ -146,6 +146,22 @@ class _AdminSidebarState extends State<AdminSidebar> {
                     },
                   ),
                   _buildMenuItem(
+                    'Employees',
+                    Icons.person,
+                    widget.selectedMenuItem == 'Employees',
+                    () {
+                      Navigator.pushReplacementNamed(
+                        context,
+                        '/employees',
+                        arguments: {
+                          'name': widget.userName,
+                          'role': widget.userRole,
+                          'userId': widget.userId,
+                        },
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
                     'Reports',
                     Icons.description,
                     widget.selectedMenuItem == 'Reports',

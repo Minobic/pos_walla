@@ -790,35 +790,48 @@ def get_users():
 
 @app.route('/transactions', methods=['GET'])
 def get_transactions():
-    period = request.args.get('period', 'daily')  # Default to daily
-    now = datetime.now(pytz.timezone('Asia/Kolkata'))
+    period = request.args.get('period')
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
 
-    # Calculate the start date based on the selected period
-    if period == 'daily':
-        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    elif period == 'weekly':
-        start_date = now - timedelta(days=now.weekday())
-        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
-    elif period == 'monthly':
-        start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    elif period == 'quarterly':
-        current_month = now.month
-        quarter_start_month = 3 * ((current_month - 1) // 3) + 1
-        start_date = now.replace(month=quarter_start_month, day=1, hour=0, minute=0, second=0, microsecond=0)
-    elif period == 'yearly':
-        start_date = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-    elif period == 'custom':
-        # Handle custom date range
-        start_date = now - timedelta(days=1)  # Default to daily for now
+    if period:
+        now = datetime.now(pytz.timezone('Asia/Kolkata'))
+
+        # Calculate the start date based on the selected period
+        if period == 'daily':
+            start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        elif period == 'weekly':
+            start_date = now - timedelta(days=now.weekday())
+            start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        elif period == 'monthly':
+            start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        elif period == 'quarterly':
+            current_month = now.month
+            quarter_start_month = 3 * ((current_month - 1) // 3) + 1
+            start_date = now.replace(month=quarter_start_month, day=1, hour=0, minute=0, second=0, microsecond=0)
+        elif period == 'yearly':
+            start_date = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        else:
+            return jsonify({'error': 'Invalid period'}), 400
+
+        end_date = now
+
+    elif start_date_str and end_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').replace(tzinfo=pytz.timezone('Asia/Kolkata'))
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').replace(tzinfo=pytz.timezone('Asia/Kolkata'))
+            end_date += timedelta(days=1)  # Include the end date
+        except ValueError:
+            return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD.'}), 400
     else:
-        return jsonify({'error': 'Invalid period'}), 400
+        return jsonify({'error': 'Missing date parameters'}), 400
 
     # Fetch transactions with payment method and customer name
     transactions = (
         db.session.query(Invoice, InvoicePayment.payment_method, Customer.customer_name)
         .join(InvoicePayment, Invoice.invoice_id == InvoicePayment.invoice_id)
         .join(Customer, Invoice.customer_id == Customer.customer_id)  # Join Customer table
-        .filter(Invoice.created_at >= start_date)
+        .filter(Invoice.created_at >= start_date, Invoice.created_at < end_date)
         .all()
     )
 
@@ -833,6 +846,8 @@ def get_transactions():
         })
 
     return jsonify(transactions_list), 200
+
+
 
 @app.route('/customers', methods=['GET'])
 def get_customers():
@@ -881,6 +896,41 @@ def get_customer_transactions(customer_id):
         })
 
     return jsonify(transactions_list), 200
+
+@app.route('/users/<int:user_id>/role', methods=['PUT'])
+def update_user_role(user_id):
+    data = request.get_json()
+    new_role = data.get('role')
+
+    if not new_role or new_role not in ['cashier', 'manager', 'admin']:
+        return jsonify({'error': 'Invalid role'}), 400
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    user.role = new_role
+    db.session.commit()
+
+    return jsonify({'message': 'Role updated successfully'}), 200
+
+@app.route('/users/<int:user_id>/status', methods=['PUT'])
+def update_user_status(user_id):
+    data = request.get_json()
+    new_status = data.get('status')
+
+    if not new_status or new_status not in ['active', 'pending', 'rejected', 'inactive']:
+        return jsonify({'error': 'Invalid status'}), 400
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    user.status = new_status
+    db.session.commit()
+
+    return jsonify({'message': 'Status updated successfully'}), 200
+
 
 if __name__ == '__main__':
     with app.app_context():  # Ensure the app context is active

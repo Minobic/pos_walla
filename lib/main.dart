@@ -14,6 +14,7 @@ import 'screens/admin/adminScreens/AdminDashboardWidget.dart';
 import 'screens/admin/adminScreens/TransactionWidget.dart';
 import 'screens/admin/adminScreens/CustomerWidget.dart';
 import 'screens/admin/adminScreens/ReportWidget.dart';
+import 'screens/admin/adminScreens/EmployeeWidget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -160,6 +161,9 @@ class _MyAppState extends State<MyApp> {
           case '/customers':
             return MaterialPageRoute(
                 builder: (context) => const CustomerWidget());
+          case '/employees':
+            return MaterialPageRoute(
+                builder: (context) => const EmployeeWidget());
           case '/reports':
             return MaterialPageRoute(
                 builder: (context) => const ReportWidget());

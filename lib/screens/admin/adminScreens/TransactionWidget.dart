@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../../custom/SidebarHeader.dart';
 import '../../../custom/AdminSidebar.dart';
-import '../../../custom/AdminGradientButton.dart'; // Adjust the import path as necessary
+import '../../../custom/AdminGradientButton.dart';
 import '../../../services/ApiService.dart';
-import 'package:printing/printing.dart'; // Add this import
-import 'package:pdf/pdf.dart'; // Add this import
-import 'package:pdf/widgets.dart' as pw; // Add this import
-import 'dart:typed_data'; // Add this import for Uint8List
+import 'package:printing/printing.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'dart:typed_data';
+import '../../../custom/GradientButton.dart';
+import '../../../custom/RedButton.dart';
+import 'package:intl/intl.dart'; // Import the intl package
 
 class TransactionWidget extends StatefulWidget {
   String selectedPeriod;
@@ -24,7 +27,7 @@ class _TransactionWidgetState extends State<TransactionWidget> {
   List<dynamic> _transactions = [];
   double _cashTotal = 0.0;
   double _onlineTotal = 0.0;
-  String _title = "Today's Transaction"; // Add this line
+  String _title = "Today's Transaction";
 
   @override
   void initState() {
@@ -67,31 +70,160 @@ class _TransactionWidgetState extends State<TransactionWidget> {
   void _updatePeriod(String period) {
     setState(() {
       widget.selectedPeriod = period;
-      _fetchTransactions();
-      // Update the title based on the selected period
-      switch (period) {
-        case 'daily':
-          _title = "Today's Transaction";
-          break;
-        case 'weekly':
-          _title = "This Week's Transactions";
-          break;
-        case 'monthly':
-          _title = "This Month's Transactions";
-          break;
-        case 'quarterly':
-          _title = "This Quarter's Transactions";
-          break;
-        case 'yearly':
-          _title = "This Year's Transactions";
-          break;
-        case 'custom':
-          _title = "Custom Period Transactions";
-          break;
-        default:
-          _title = "Transactions";
+      if (period == 'custom') {
+        _showCustomDateRangeDialog();
+      } else {
+        _fetchTransactions();
+        switch (period) {
+          case 'daily':
+            _title = "Today's Transaction";
+            break;
+          case 'weekly':
+            _title = "This Week's Transactions";
+            break;
+          case 'monthly':
+            _title = "This Month's Transactions";
+            break;
+          case 'quarterly':
+            _title = "This Quarter's Transactions";
+            break;
+          case 'yearly':
+            _title = "This Year's Transactions";
+            break;
+          default:
+            _title = "Transactions";
+        }
       }
     });
+  }
+
+  Future<void> _showCustomDateRangeDialog() async {
+    TextEditingController startDateController = TextEditingController();
+    TextEditingController endDateController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          backgroundColor: Colors.white,
+          title: Container(
+            alignment: Alignment.center,
+            child: const Text(
+              'Select Date Range',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+          ),
+          content: Container(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: startDateController,
+                  decoration: InputDecoration(
+                    labelText: 'Start Date (DD-MM-YYYY)',
+                    labelStyle: TextStyle(fontFamily: 'Poppins'),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  keyboardType: TextInputType.datetime,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: endDateController,
+                  decoration: InputDecoration(
+                    labelText: 'End Date (DD-MM-YYYY)',
+                    labelStyle: TextStyle(fontFamily: 'Poppins'),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  keyboardType: TextInputType.datetime,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            RedButton(
+              text: 'Cancel',
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              width: 150, // Set the width of the button
+            ),
+            GradientButton(
+              text: 'Apply',
+              onPressed: () {
+                String startDate = startDateController.text;
+                String endDate = endDateController.text;
+
+                if (startDate.isNotEmpty && endDate.isNotEmpty) {
+                  try {
+                    // Parse the input dates
+                    DateFormat inputFormat = DateFormat('dd-MM-yyyy');
+                    DateFormat apiFormat = DateFormat('yyyy-MM-dd');
+
+                    DateTime parsedStartDate = inputFormat.parse(startDate);
+                    DateTime parsedEndDate = inputFormat.parse(endDate);
+
+                    // Format the dates for the API call
+                    String formattedStartDate =
+                        apiFormat.format(parsedStartDate);
+                    String formattedEndDate = apiFormat.format(parsedEndDate);
+
+                    setState(() {
+                      widget.selectedPeriod = 'custom';
+                      _title = "Custom Period Transactions";
+                      _fetchCustomTransactions(
+                          formattedStartDate, formattedEndDate);
+                    });
+                    Navigator.of(context).pop(); // Close the dialog
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                            'Please enter valid dates in DD-MM-YYYY format.'),
+                      ),
+                    );
+                  }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Please enter both start and end dates.'),
+                    ),
+                  );
+                }
+              },
+              width: 150, // Set the width of the button
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _fetchCustomTransactions(
+      String startDate, String endDate) async {
+    try {
+      final transactions =
+          await ApiService.fetchCustomTransactions(startDate, endDate);
+      setState(() {
+        _transactions = transactions;
+        _calculateTotals(transactions);
+      });
+    } catch (e) {
+      print('Error fetching custom transactions: $e');
+    }
   }
 
   Future<void> _printTransactions() async {
@@ -176,7 +308,7 @@ class _TransactionWidgetState extends State<TransactionWidget> {
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        _title, // Use the state variable here
+                                        _title,
                                         style: const TextStyle(
                                           fontSize: 20,
                                           fontWeight: FontWeight.bold,

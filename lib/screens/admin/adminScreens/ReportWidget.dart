@@ -5,6 +5,8 @@ import '../../../custom/SidebarHeader.dart'; // Ensure this path is correct
 import '../../../custom/AdminSidebar.dart'; // Ensure this path is correct
 import '../../../services/ApiService.dart'; // Ensure this path is correct
 import 'package:intl/intl.dart';
+import '../../../custom/GradientButton.dart';
+import '../../../custom/RedButton.dart';
 
 class ReportWidget extends StatefulWidget {
   const ReportWidget({Key? key}) : super(key: key);
@@ -15,10 +17,13 @@ class ReportWidget extends StatefulWidget {
 
 class _ReportWidgetState extends State<ReportWidget> {
   String _timeRange = 'daily'; // Default time range
+  String? _lastSelectedTimeRange;
   bool _isSidebarOpen = false;
   List<dynamic> _transactions = [];
   double _cashAmount = 0.0;
   double _onlineAmount = 0.0;
+  String? _startDate; // Initialize as nullable
+  String? _endDate; // Initialize as nullable
 
   @override
   void initState() {
@@ -32,7 +37,7 @@ class _ReportWidgetState extends State<ReportWidget> {
     });
   }
 
-  Future<void> _fetchTransactions() async {
+  void _fetchTransactions() async {
     try {
       final transactions = await ApiService.fetchTransactions(_timeRange);
       setState(() {
@@ -67,6 +72,9 @@ class _ReportWidgetState extends State<ReportWidget> {
 
     // Initialize data points based on the time range
     int dataPointCount;
+    DateTime? startDate;
+    DateTime? endDate;
+
     switch (_timeRange) {
       case 'daily':
         dataPointCount = now.hour + 1; // Show from 0 to current hour
@@ -80,6 +88,16 @@ class _ReportWidgetState extends State<ReportWidget> {
       case 'quarterly':
       case 'yearly':
         dataPointCount = now.month; // Show from January to current month
+        break;
+      case 'custom':
+        // Ensure _startDate and _endDate are set
+        if (_startDate != null && _endDate != null) {
+          startDate = DateTime.parse(_startDate!);
+          endDate = DateTime.parse(_endDate!);
+          dataPointCount = endDate.difference(startDate).inDays + 1;
+        } else {
+          dataPointCount = 0; // No data points if dates are not set
+        }
         break;
       default:
         dataPointCount = 0;
@@ -124,6 +142,16 @@ class _ReportWidgetState extends State<ReportWidget> {
         case 'yearly':
           if (date.year == now.year) {
             index = date.month - 1; // Month (1-12)
+            dataPoints[index] =
+                (dataPoints[index] ?? 0) + transaction['total_amount'];
+          }
+          break;
+        case 'custom':
+          if (startDate != null &&
+              endDate != null &&
+              date.isAfter(startDate.subtract(Duration(days: 1))) &&
+              date.isBefore(endDate.add(Duration(days: 1)))) {
+            index = date.difference(startDate).inDays;
             dataPoints[index] =
                 (dataPoints[index] ?? 0) + transaction['total_amount'];
           }
@@ -202,8 +230,149 @@ class _ReportWidgetState extends State<ReportWidget> {
           'Dec'
         ];
         return months[value.toInt()];
+      case 'custom':
+        // Assume _startDate is set
+        DateTime date =
+            DateTime.parse(_startDate!).add(Duration(days: value.toInt()));
+        return '${date.day}-${date.month}';
       default:
         return '';
+    }
+  }
+
+  Future<void> _showCustomDateRangeDialog() async {
+    // Set _timeRange to the last selected time range to maintain the current state
+    setState(() {
+      _timeRange = _lastSelectedTimeRange ?? 'daily';
+    });
+
+    TextEditingController startDateController = TextEditingController();
+    TextEditingController endDateController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          backgroundColor: Colors.white,
+          title: Container(
+            alignment: Alignment.center,
+            child: const Text(
+              'Select Date Range',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+          ),
+          content: Container(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: startDateController,
+                  decoration: InputDecoration(
+                    labelText: 'Start Date (DD-MM-YYYY)',
+                    labelStyle: TextStyle(fontFamily: 'Poppins'),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  keyboardType: TextInputType.datetime,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: endDateController,
+                  decoration: InputDecoration(
+                    labelText: 'End Date (DD-MM-YYYY)',
+                    labelStyle: TextStyle(fontFamily: 'Poppins'),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  keyboardType: TextInputType.datetime,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            RedButton(
+              text: 'Cancel',
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              width: 150, // Set the width of the button
+            ),
+            GradientButton(
+              text: 'Apply',
+              onPressed: () {
+                String startDate = startDateController.text;
+                String endDate = endDateController.text;
+
+                if (startDate.isNotEmpty && endDate.isNotEmpty) {
+                  try {
+                    // Validate the input dates
+                    DateFormat inputFormat = DateFormat('dd-MM-yyyy');
+                    DateTime parsedStartDate = inputFormat.parse(startDate);
+                    DateTime parsedEndDate = inputFormat.parse(endDate);
+
+                    // Format the dates for the API call
+                    DateFormat apiFormat = DateFormat('yyyy-MM-dd');
+                    String formattedStartDate =
+                        apiFormat.format(parsedStartDate);
+                    String formattedEndDate = apiFormat.format(parsedEndDate);
+
+                    setState(() {
+                      _timeRange = 'custom';
+                      _lastSelectedTimeRange =
+                          'custom'; // Update the last selected time range
+                      _startDate = formattedStartDate; // Store the start date
+                      _endDate = formattedEndDate; // Store the end date
+                      _fetchCustomTransactions(
+                          formattedStartDate, formattedEndDate);
+                    });
+                    Navigator.of(context).pop(); // Close the dialog
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                            'Please enter valid dates in DD-MM-YYYY format.'),
+                      ),
+                    );
+                  }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Please enter both start and end dates.'),
+                    ),
+                  );
+                }
+              },
+              width: 150, // Set the width of the button
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _fetchCustomTransactions(
+      String startDate, String endDate) async {
+    try {
+      final transactions =
+          await ApiService.fetchCustomTransactions(startDate, endDate);
+      setState(() {
+        _transactions = transactions;
+        _processTransactionData();
+      });
+    } catch (e) {
+      print('Error fetching custom transactions: $e');
     }
   }
 
@@ -218,12 +387,10 @@ class _ReportWidgetState extends State<ReportWidget> {
     }
 
     final totalAmount = _cashAmount + _onlineAmount;
-    final cashPercentage = totalAmount > 0
-        ? (_cashAmount / totalAmount) * 100
-        : 0.0; // Ensure this is a double
-    final onlinePercentage = totalAmount > 0
-        ? (_onlineAmount / totalAmount) * 100
-        : 0.0; // Ensure this is a double
+    final cashPercentage =
+        totalAmount > 0 ? (_cashAmount / totalAmount) * 100 : 0.0;
+    final onlinePercentage =
+        totalAmount > 0 ? (_onlineAmount / totalAmount) * 100 : 0.0;
 
     // Calculate the maximum value in the dataset
     double maxValue = graphData.map((spot) => spot.y).reduce(max);
@@ -296,8 +463,14 @@ class _ReportWidgetState extends State<ReportWidget> {
                                             underline: Container(),
                                             onChanged: (String? newValue) {
                                               setState(() {
+                                                _lastSelectedTimeRange =
+                                                    _timeRange; // Update the last selected time range
                                                 _timeRange = newValue!;
-                                                _fetchTransactions();
+                                                if (_timeRange == 'custom') {
+                                                  _showCustomDateRangeDialog();
+                                                } else {
+                                                  _fetchTransactions();
+                                                }
                                               });
                                             },
                                             items: <String>[
@@ -305,7 +478,8 @@ class _ReportWidgetState extends State<ReportWidget> {
                                               'weekly',
                                               'monthly',
                                               'quarterly',
-                                              'yearly'
+                                              'yearly',
+                                              'custom'
                                             ].map<DropdownMenuItem<String>>(
                                                 (String value) {
                                               return DropdownMenuItem<String>(
@@ -336,7 +510,6 @@ class _ReportWidgetState extends State<ReportWidget> {
                                               showTitles: true,
                                               interval: xInterval,
                                               getTitlesWidget: (value, meta) {
-                                                // Ensure unique labels
                                                 if (value % xInterval == 0) {
                                                   return Text(
                                                       _getXAxisTitle(value));
