@@ -931,6 +931,17 @@ def update_user_status(user_id):
 
     return jsonify({'message': 'Status updated successfully'}), 200
 
+@app.route('/users/<int:user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    db.session.delete(user)
+    db.session.commit()
+
+    return jsonify({'message': 'User deleted successfully'}), 200
+
 
 if __name__ == '__main__':
     with app.app_context():  # Ensure the app context is active

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../custom/SidebarHeader.dart'; // Ensure this path is correct
 import '../../../custom/AdminSidebar.dart'; // Ensure this path is correct
 import '../../../custom/GradientButton.dart'; // Ensure this path is correct
+import '../../../custom/RedButton.dart'; // Ensure this path is correct
 import '../../../services/ApiService.dart'; // Ensure this path is correct
 
 class EmployeeWidget extends StatefulWidget {
@@ -80,8 +81,7 @@ class _EmployeeWidgetState extends State<EmployeeWidget> {
             width: 400,
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment:
-                  CrossAxisAlignment.center, // Center the content
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 CircleAvatar(
                   radius: 40,
@@ -110,8 +110,7 @@ class _EmployeeWidgetState extends State<EmployeeWidget> {
                 ),
                 const SizedBox(height: 20),
                 Padding(
-                  padding: const EdgeInsets.only(
-                      left: 40.0), // Adjust the left padding as needed
+                  padding: const EdgeInsets.only(left: 40.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -119,10 +118,7 @@ class _EmployeeWidgetState extends State<EmployeeWidget> {
                           'Employee ID:', employee['user_id'].toString()),
                       _buildDetailRow('Email:', employee['email'].toString()),
                       _buildDetailRow('Contact:', employee['phone'].toString()),
-                      _buildDetailRow(
-                          'Salary:', '₹ ${employee['salary'].toString()}'),
-                      _buildDetailRow('Address:',
-                          (employee['address'] ?? 'N/A').toString()),
+                      _buildDetailRow('Status:', employee['status'].toString()),
                     ],
                   ),
                 ),
@@ -137,9 +133,14 @@ class _EmployeeWidgetState extends State<EmployeeWidget> {
                       child: const Text('Cancel'),
                     ),
                     ElevatedButton(
-                      onPressed: () {
-                        // Implement delete functionality here
-                        Navigator.of(context).pop();
+                      onPressed: () async {
+                        try {
+                          await ApiService.deleteEmployee(employee['user_id']);
+                          Navigator.of(context).pop();
+                          _fetchEmployees(); // Refresh the employee list
+                        } catch (e) {
+                          print('Failed to delete employee: $e');
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
@@ -179,6 +180,225 @@ class _EmployeeWidgetState extends State<EmployeeWidget> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showAddEmployeeDialog() {
+    final TextEditingController firstNameController = TextEditingController();
+    final TextEditingController lastNameController = TextEditingController();
+    final TextEditingController emailController = TextEditingController();
+    final TextEditingController phoneController = TextEditingController();
+    final TextEditingController usernameController = TextEditingController();
+    final TextEditingController passwordController = TextEditingController();
+
+    // Initial values for dropdowns
+    String selectedRole = 'cashier';
+    String selectedStatus = 'active';
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              backgroundColor: Colors.white,
+              title: Container(
+                alignment: Alignment.center,
+                child: const Text(
+                  'Add New Employee',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+              content: Container(
+                width: 400,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: usernameController,
+                      decoration: InputDecoration(
+                        labelText: 'Username',
+                        labelStyle: TextStyle(fontFamily: 'Poppins'),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: firstNameController,
+                      decoration: InputDecoration(
+                        labelText: 'First Name',
+                        labelStyle: TextStyle(fontFamily: 'Poppins'),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: lastNameController,
+                      decoration: InputDecoration(
+                        labelText: 'Last Name',
+                        labelStyle: TextStyle(fontFamily: 'Poppins'),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: emailController,
+                      decoration: InputDecoration(
+                        labelText: 'Email',
+                        labelStyle: TextStyle(fontFamily: 'Poppins'),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: phoneController,
+                      decoration: InputDecoration(
+                        labelText: 'Phone',
+                        labelStyle: TextStyle(fontFamily: 'Poppins'),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: passwordController,
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        labelStyle: TextStyle(fontFamily: 'Poppins'),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      dropdownColor: Colors.white,
+                      value: selectedRole,
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          selectedRole = newValue!;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        labelText: 'Role',
+                        labelStyle: TextStyle(fontFamily: 'Poppins'),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                      ),
+                      items: <String>['cashier', 'manager', 'admin']
+                          .map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value.capitalize()),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      dropdownColor: Colors.white,
+                      value: selectedStatus,
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          selectedStatus = newValue!;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        labelText: 'Status',
+                        labelStyle: TextStyle(fontFamily: 'Poppins'),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                      ),
+                      items: <String>[
+                        'active',
+                        'pending',
+                        'rejected',
+                        'inactive'
+                      ].map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value.capitalize()),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                RedButton(
+                  text: 'Cancel',
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close the dialog
+                  },
+                  width: 150, // Set the desired width
+                ),
+                GradientButton(
+                  text: 'Add',
+                  onPressed: () async {
+                    // Validate fields
+                    if (firstNameController.text.isEmpty ||
+                        lastNameController.text.isEmpty ||
+                        emailController.text.isEmpty ||
+                        phoneController.text.isEmpty ||
+                        usernameController.text.isEmpty ||
+                        passwordController.text.isEmpty) {
+                      // Show an error message or handle the validation error
+                      print('All fields are required');
+                      return;
+                    }
+
+                    try {
+                      final newEmployee = await ApiService.addEmployee(
+                        firstName: firstNameController.text,
+                        lastName: lastNameController.text,
+                        email: emailController.text,
+                        phone: phoneController.text,
+                        role: selectedRole,
+                        status: selectedStatus,
+                        username: usernameController.text,
+                        password: passwordController.text,
+                      );
+                      setState(() {
+                        _employees.add(newEmployee);
+                      });
+                      Navigator.of(context).pop();
+                      _fetchEmployees(); // Refresh the employee list
+                    } catch (e) {
+                      print('Failed to add employee: $e');
+                    }
+                  },
+                  width: 150,
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -236,7 +456,7 @@ class _EmployeeWidgetState extends State<EmployeeWidget> {
                                   ),
                                 ),
                                 GradientButton(
-                                  onPressed: () {},
+                                  onPressed: _showAddEmployeeDialog,
                                   text: 'Add Employee',
                                   width: 160,
                                 ),
@@ -380,6 +600,7 @@ class _EmployeeWidgetState extends State<EmployeeWidget> {
                                                   child:
                                                       DropdownButtonFormField<
                                                           String>(
+                                                    dropdownColor: Colors.white,
                                                     value: employee['role'],
                                                     onChanged: (newValue) {
                                                       _updateEmployeeRole(
@@ -421,6 +642,7 @@ class _EmployeeWidgetState extends State<EmployeeWidget> {
                                                   child:
                                                       DropdownButtonFormField<
                                                           String>(
+                                                    dropdownColor: Colors.white,
                                                     value: employee['status'],
                                                     onChanged: (newValue) {
                                                       _updateEmployeeStatus(

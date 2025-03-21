@@ -676,6 +676,40 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> addEmployee({
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String phone,
+    required String role,
+    required String status,
+    required String username,
+    required String password,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/register'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{
+        'username': username,
+        'firstName': firstName,
+        'lastName': lastName,
+        'email': email,
+        'phone': phone,
+        'password': password,
+        'confirmPassword': password,
+        'role': role,
+      }),
+    );
+
+    if (response.statusCode == 201) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to add employee: ${response.body}');
+    }
+  }
+
   static Future<void> updateEmployeeStatus(int userId, String newStatus) async {
     final url = Uri.parse('$_baseUrl/users/$userId/status');
     final response = await http.put(
@@ -690,6 +724,15 @@ class ApiService {
 
     if (response.statusCode != 200) {
       throw Exception('Failed to update status: ${response.body}');
+    }
+  }
+
+  static Future<void> deleteEmployee(int userId) async {
+    final url = Uri.parse('$_baseUrl/users/$userId');
+    final response = await http.delete(url);
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete employee: ${response.body}');
     }
   }
 }
